@@ -1,4 +1,4 @@
-import type { NegotiationDetail, OrderDetail } from "./types";
+import type { NegotiationDetail } from "./types";
 
 export type Tone = "olive" | "oxblood" | "ochre" | "ink" | "faint";
 
@@ -6,6 +6,9 @@ export type StatusDescriptor = {
   label: string;
   tone: Tone;
 };
+
+/** The only order facts status language needs, so any order read model fits. */
+export type StatusOrder = { status: string; authorizedAt: Date | null } | null;
 
 /**
  * Status language used across the desk. Buyer-facing wording never implies a
@@ -27,7 +30,7 @@ export function negotiationStatus(status: string): StatusDescriptor {
 }
 
 export function orderStatus(
-  order: OrderDetail | null,
+  order: StatusOrder,
 ): StatusDescriptor | null {
   if (!order) return null;
   switch (order.status) {
@@ -49,7 +52,7 @@ export function orderStatus(
 /** The single status a ledger row should show for a negotiation. */
 export function headlineStatus(
   negotiation: Pick<NegotiationDetail, "status"> & {
-    order: OrderDetail | null;
+    order: StatusOrder;
   },
 ): StatusDescriptor {
   return orderStatus(negotiation.order) ?? negotiationStatus(negotiation.status);

@@ -1,10 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
-import type { StatusDescriptor, Tone } from "./status";
-
-/** Kept for call-site compatibility; the modern surface does not stagger. */
-export function delay(_ms: number): CSSProperties {
-  return {};
-}
+import type { ReactNode } from "react";
+import type { StatusDescriptor } from "./status";
 
 /** Error / notice strip fed by the actions' ?error= and ?notice= params. */
 export function Banner({
@@ -17,101 +12,68 @@ export function Banner({
   if (!error && !notice) return null;
 
   const isError = Boolean(error);
-  const message = error ?? notice ?? "";
 
   return (
     <div
       role={isError ? "alert" : "status"}
-      className={`mt-6 flex items-start gap-3 rounded-lg border px-4 py-3 ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-800"
-          : "border-emerald-200 bg-emerald-50 text-emerald-800"
-      }`}
+      className={`banner ${isError ? "banner--error" : "banner--notice"}`}
     >
-      <span className="shrink-0 text-[12px] font-semibold uppercase tracking-wide">
+      <span className="shrink-0 text-[12px] font-semibold">
         {isError ? "Error" : "Notice"}
       </span>
-      <p className="text-[13.5px] leading-snug">{message}</p>
+      <p className="leading-snug">{error ?? notice}</p>
     </div>
   );
 }
 
+const toneClass: Record<string, string> = {
+  olive: "pill--green",
+  oxblood: "pill--red",
+  ochre: "pill--amber",
+  ink: "pill--gray",
+  faint: "pill--gray",
+};
+
 /** A compact status pill. */
 export function StatusStamp({
   status,
-  quiet = false,
-  className = "",
+  plain = false,
 }: {
   status: StatusDescriptor;
-  quiet?: boolean;
-  className?: string;
+  plain?: boolean;
 }) {
-  const toneClass =
-    status.tone === "faint" ? "stamp--ink stamp--quiet" : `stamp--${status.tone}`;
   return (
     <span
-      className={`stamp ${toneClass}${quiet ? " stamp--quiet" : ""} ${className}`}
+      className={`pill ${toneClass[status.tone] ?? "pill--gray"}${
+        plain ? " pill--plain" : ""
+      }`}
     >
       {status.label}
     </span>
   );
 }
 
-/** A label / value row. */
+/** Label / value row used in the compact cards. */
 export function Leader({
   label,
-  children,
-  strong = false,
-  tone,
+  value,
+  mono = false,
 }: {
   label: string;
-  children: ReactNode;
-  strong?: boolean;
-  tone?: Tone;
+  value: ReactNode;
+  mono?: boolean;
 }) {
   return (
-    <div className="leader">
-      <span className="shrink-0 text-[12px] text-ink-faint">{label}</span>
-      <span
-        className={`leader__value ${strong ? "text-[14px] font-semibold" : ""} ${
-          tone ? `tone-${tone}` : ""
-        }`}
-      >
-        {children}
+    <div className="flex items-baseline justify-between gap-3 py-1">
+      <span className="text-[12px] text-ink-faint">{label}</span>
+      <span className={`text-[12.5px] text-ink ${mono ? "mono num" : ""}`}>
+        {value}
       </span>
     </div>
   );
 }
 
-/** Section heading with an optional right-hand aside. */
-export function SectionHead({
-  title,
-  aside,
-}: {
-  index?: string;
-  title: string;
-  aside?: ReactNode;
-}) {
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-3">
-      <h2 className="font-display text-[17px] leading-tight">{title}</h2>
-      {aside ? <div>{aside}</div> : null}
-    </div>
-  );
-}
-
-/** Quiet empty-state line. */
+/** Quiet empty state used inside cards and tables. */
 export function EmptyNote({ children }: { children: ReactNode }) {
-  return (
-    <p className="rounded-lg border border-dashed border-rule bg-paper px-4 py-8 text-center text-[13px] text-ink-faint">
-      {children}
-    </p>
-  );
-}
-
-/** Small caption used under tables and panels. */
-export function Caption({ children }: { children: ReactNode }) {
-  return (
-    <p className="mt-3 text-[12px] leading-relaxed text-ink-faint">{children}</p>
-  );
+  return <p className="empty">{children}</p>;
 }

@@ -1,7 +1,13 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
+import { SideNav } from "@/components/shell/side-nav";
+import {
+  SidebarRecent,
+  SidebarRecentFallback,
+} from "@/components/shell/sidebar-recent";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,21 +31,13 @@ export const metadata: Metadata = {
     "A working procurement workspace: buyer and supplier agents negotiate bulk purchases, and borderline offers come to a human vendor for a decision.",
 };
 
-const desks = [
-  { href: "/", label: "Buyer" },
-  { href: "/vendor", label: "Vendor" },
-];
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${plexMono.variable}`}
-    >
+    <html lang="en" className={`${inter.variable} ${plexMono.variable}`}>
       <body>
         <a
           href="#desk"
@@ -48,35 +46,29 @@ export default function RootLayout({
           Skip to content
         </a>
 
-        <header className="site-head">
-          <div className="wrap site-head__inner">
-            <Link href="/" className="brand">
-              <span className="brand__name">CommerceOS</span>
-              <span className="brand__tag hidden sm:inline">Procurement</span>
-            </Link>
+        <div className="app">
+          <aside className="sidebar">
+            <div className="sidebar__brand">
+              <Link href="/" className="sidebar__wordmark">
+                CommerceOS
+              </Link>
+              <span className="sidebar__caption">Procurement</span>
+            </div>
 
-            <nav aria-label="Workspaces" className="site-nav">
-              {desks.map((desk) => (
-                <Link
-                  key={desk.href}
-                  href={desk.href}
-                  className="site-nav__link"
-                >
-                  {desk.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="sidebar__body">
+              <SideNav />
+              <Suspense fallback={<SidebarRecentFallback />}>
+                <SidebarRecent />
+              </Suspense>
+            </div>
+
+            <div className="sidebar__foot">Demo — no payments processed</div>
+          </aside>
+
+          <div className="app__main">
+            <main id="desk">{children}</main>
           </div>
-        </header>
-
-        <main id="desk">{children}</main>
-
-        <footer className="site-foot">
-          <div className="wrap site-foot__inner">
-            <p>CommerceOS — procurement workspace</p>
-            <p>Demonstration only. No payments are processed.</p>
-          </div>
-        </footer>
+        </div>
       </body>
     </html>
   );

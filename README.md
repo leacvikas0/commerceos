@@ -57,31 +57,35 @@ pricing, accepting, or confirming.
 
 ```
 commerceos/
-├─ app/                          (Next.js App Router)
-│  ├─ layout.tsx                 root layout, fonts, nav
-│  ├─ globals.css                design tokens, paper texture, base styles
-│  ├─ page.tsx                   buyer storefront + recent negotiations
-│  ├─ actions.ts                 server actions (start, vendor decisions,
-│  │                             authorize, confirm, simulate repricing)
-│  ├─ vendor/page.tsx            vendor desk (pending + auto-decided offers)
-│  └─ negotiation/[id]/page.tsx  buyer transcript, deal, order flow
-├─ components/                   shared UI pieces
-├─ lib/
-│  ├─ negotiation.ts             pure engine: decision bands, counters,
-│  │                             status roll-up, recommendDeal
-│  ├─ negotiation.test.ts        unit tests for the engine
-│  ├─ negotiation-service.ts     DB orchestration: rounds, status, order,
-│  │                             confirm gate, repricing simulation
-│  ├─ queries.ts                 read models (buyer DTOs exclude floors)
-│  ├─ db.ts                      Prisma client singleton
-│  └─ format.ts                  integer-minor money parsing/formatting
+├─ src/
+│  ├─ app/                       Next.js App Router
+│  │  ├─ layout.tsx              app shell, fonts, navigation
+│  │  ├─ globals.css             design tokens and base styles
+│  │  ├─ page.tsx                buyer workspace (requisition + negotiations)
+│  │  ├─ actions.ts              server actions (start, vendor decisions,
+│  │  │                          authorize, confirm, simulate repricing)
+│  │  ├─ vendor/page.tsx         vendor review desk
+│  │  └─ negotiation/[id]/page.tsx  buyer transcript, deal, order flow
+│  ├─ components/                shared UI (storefront, vendor, negotiation)
+│  └─ lib/
+│     ├─ negotiation.ts          pure engine: decision bands, counters,
+│     │                          status roll-up, recommendDeal
+│     ├─ negotiation.test.ts     unit tests for the engine
+│     ├─ negotiation-service.ts  DB orchestration: rounds, status, order,
+│     │                          confirm gate, repricing simulation
+│     ├─ queries.ts              read models (buyer DTOs exclude floors)
+│     ├─ db.ts                   Prisma client singleton
+│     └─ format.ts               integer-minor money parsing/formatting
 ├─ prisma/
 │  ├─ schema.prisma              Item, Supplier, Listing, Buyer,
 │  │                             Negotiation, Offer, Order
 │  ├─ seed.ts                    small readable seed (2 items, 3 suppliers,
 │  │                             5 listings, 1 buyer)
 │  └─ migrations/
-└─ scripts/smoke.ts              drives one negotiation against the DB
+└─ scripts/
+   ├─ smoke.ts                   runs one negotiation and prints its rounds
+   └─ e2e.ts                     server-flow check: accept → authorize →
+                                 confirm, and reprice → BLOCKED
 ```
 
 ## Setup
@@ -114,6 +118,7 @@ Useful commands:
 | `npx prisma db seed` | re-seed the demo data |
 | `npx prisma migrate status` | check migration state |
 | `npx tsx scripts/smoke.ts` | run one negotiation and print its rounds |
+| `npx tsx scripts/e2e.ts` | server-flow check: accept → authorize → confirm, then reprice → BLOCKED (cleans up after itself) |
 
 ## Demo walkthrough
 
@@ -169,6 +174,11 @@ The Vitest suite (`lib/negotiation.test.ts`) covers the pure engine:
 - the status roll-up (agreed / awaiting vendor / rejected);
 - `recommendDeal` ordering: lowest price, then earliest delivery, then
   reliability.
+
+The service flow is covered by `scripts/e2e.ts`, which drives the real database
+through vendor accept → authorize → confirm and then a supplier repricing →
+blocked confirmation, asserting the totals and the old → new block reason. It
+deletes the rows it created and restores any listing it repriced.
 
 ## What works / what is partial
 

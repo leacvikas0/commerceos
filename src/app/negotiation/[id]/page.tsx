@@ -4,21 +4,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getNegotiationDetail } from "@/lib/queries";
 import { recommendDeal } from "@/lib/negotiation";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { headlineStatus, isVendorCounter } from "@/components/status";
-import { Banner, Caption, SectionHead, StatusStamp, delay } from "@/components/ui";
-import { BriefPanel } from "@/components/negotiation/brief-panel";
-import { CounterCallout } from "@/components/negotiation/counter-callout";
-import { OrderPanel } from "@/components/negotiation/order-panel";
-import { RecommendedPanel } from "@/components/negotiation/recommended-panel";
-import { Transcript } from "@/components/negotiation/transcript";
+import { Banner, StatusStamp } from "@/components/ui";
+import { PageHeader, AccountChip } from "@/components/shell/page-header";
+import { RoundsMatrix } from "@/components/negotiation/rounds-matrix";
+import { DealCard } from "@/components/negotiation/deal-card";
+import { OrderGate } from "@/components/negotiation/order-gate";
+import { CounterBanner } from "@/components/negotiation/counter-banner";
 
 // Cache Components: this route reads the database and request data on every
 // request, so it is allowed to block instead of prerendering a static shell.
 export const instant = false;
 
 export const metadata: Metadata = {
-  title: "Negotiation transcript",
+  title: "Negotiation",
 };
 
 export default async function NegotiationPage({
@@ -58,104 +58,104 @@ export default async function NegotiationPage({
   const pendingCounter =
     detail.rounds
       .flatMap((round) =>
-        round.offers
-          .filter(
-            (offer) =>
-              offer.decision === "PENDING" && isVendorCounter(offer.note),
-          )
-          .map((offer) => ({ offer, round })),
+        round.offers.map((offer) => ({ offer, round })),
       )
-      .at(-1) ?? null;
+      .find(
+        ({ offer }) =>
+          offer.decision === "PENDING" && isVendorCounter(offer.note),
+      ) ?? null;
 
-  const offerCount = detail.rounds.reduce(
-    (total, round) => total + round.offers.length,
-    0,
+  const columns = Math.max(
+    3,
+    ...detail.rounds.flatMap((round) =>
+      round.offers.map((offer) => offer.round),
+    ),
   );
 
   return (
-    <div className="wrap">
-      <Banner error={error} notice={notice} />
+    <>
+      <PageHeader
+        title="Negotiation"
+        subtitle="Round-by-round record and the order gate."
+        right={
+          <AccountChip
+            name={detail.buyerName}
+            budgetMinor={detail.budgetCapMinor}
+            currency={currency}
+          />
+        }
+      />
 
-      <header className="reveal grid gap-6 pt-6 pb-8 lg:grid-cols-12 lg:items-end lg:gap-8 lg:pt-10">
-        <div className="lg:col-span-8">
-          <Link
-            href="/"
-            className="eyebrow inline-flex items-center gap-2 no-underline transition-colors hover:text-ink"
-          >
-            <span aria-hidden="true">←</span> Buyer desk
+      <div className="page">
+        <Banner error={error} notice={notice} />
+
+        <p className="text-[12px] text-ink-faint">
+          <Link href="/" className="hover:text-ink hover:underline">
+            Buyer workspace
           </Link>
-          <p className="eyebrow mt-4">Negotiation</p>
-          <h1 className="mt-1.5 font-display text-[26px] leading-tight sm:text-[30px]">
+          <span className="mx-1.5">/</span>
+          <span className="mono">{detail.item.sku}</span>
+        </p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h2 className="text-[23px] font-semibold leading-tight">
             {detail.item.name}
-          </h1>
-          <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.06em] text-ink-faint">
-            {detail.item.sku} · {detail.item.specVersion} · Buyer{" "}
-            {detail.buyerName} · Filed {formatDateTime(detail.createdAt)}
-          </p>
-        </div>
-        <div className="lg:col-span-4 lg:flex lg:justify-end">
+          </h2>
           <StatusStamp status={status} />
         </div>
-      </header>
+        <p className="mt-1 text-[12px] text-ink-faint">
+          Qty {detail.quantity} · Target{" "}
+          <span className="mono">
+            {formatMoney(detail.targetUnitPriceMinor, currency)}
+          </span>{" "}
+          · Budget{" "}
+          <span className="mono">
+            {formatMoney(detail.budgetCapMinor, currency)}
+          </span>{" "}
+          · Deadline {formatDate(detail.deadline)} · Filed{" "}
+          {formatDateTime(detail.createdAt)}
+        </p>
 
-      {pendingCounter ? (
-        <div className="reveal" style={delay(100)}>
-          <CounterCallout
+        {pendingCounter ? (
+          <CounterBanner
             negotiationId={detail.id}
-            offer={pendingCounter.offer}
-            round={pendingCounter.round}
+            offerId={pendingCounter.offer.id}
+            unitPriceMinor={pendingCounter.offer.unitPriceMinor}
             quantity={detail.quantity}
-            targetUnitPriceMinor={detail.targetUnitPriceMinor}
+            currency={currency}
           />
-        </div>
-      ) : null}
+        ) : null}
 
-      <div className="grid gap-10 pb-16 lg:grid-cols-12 lg:gap-8">
-        <div className="lg:col-span-8">
-          <SectionHead
-            index="01"
-            title="Transcript"
-            aside={
-              <span className="eyebrow eyebrow--faint">
-                {detail.rounds.length}{" "}
-                {detail.rounds.length === 1 ? "supplier" : "suppliers"} ·{" "}
-                {offerCount} {offerCount === 1 ? "offer" : "offers"}
-              </span>
-            }
-          />
-          <div className="mt-4">
-            <Transcript
-              rounds={detail.rounds}
-              targetUnitPriceMinor={detail.targetUnitPriceMinor}
-              recommendedOfferId={recommended?.offer.id ?? null}
-            />
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="min-w-0 lg:col-span-2">
+            <section className="card">
+              <div className="card__head">
+                <h2 className="card__title">Rounds</h2>
+                <span className="card__sub">
+                  {detail.rounds.length} suppliers
+                </span>
+              </div>
+              <div className="card__body card__body--flush overflow-x-auto">
+                <RoundsMatrix
+                  rounds={detail.rounds}
+                  currency={currency}
+                  recommendedOfferId={recommended?.offer.id ?? null}
+                  columns={columns}
+                />
+              </div>
+            </section>
           </div>
-          <Caption>
-            Prices are per unit in {currency}. Supplier policy decides each
-            round; borderline prices are decided at the vendor desk, and a
-            vendor counter appears here for your decision.
-          </Caption>
-        </div>
 
-        <aside className="lg:col-span-4">
-          <div className="flex flex-col gap-5 lg:sticky lg:top-6">
-            <BriefPanel detail={detail} currency={currency} />
-            {recommended ? (
-              <RecommendedPanel
-                offer={recommended.offer}
-                round={recommended.round}
-                targetUnitPriceMinor={detail.targetUnitPriceMinor}
-                quantity={detail.quantity}
-              />
-            ) : null}
-            <OrderPanel
+          <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[76px] lg:self-start">
+            <DealCard
               detail={detail}
-              recommended={recommended}
               currency={currency}
+              recommended={recommended}
             />
+            <OrderGate detail={detail} currency={currency} />
           </div>
-        </aside>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

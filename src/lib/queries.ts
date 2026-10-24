@@ -67,7 +67,7 @@ export async function getNegotiationDetail(negotiationId: string) {
     include: {
       buyer: true,
       item: true,
-      order: true,
+      order: { include: { listing: true } },
       offers: {
         include: {
           listing: { include: { supplier: true } },
@@ -130,11 +130,23 @@ export async function getNegotiationDetail(negotiationId: string) {
     order: negotiation.order
       ? {
           id: negotiation.order.id,
+          listingId: negotiation.order.listingId,
           status: negotiation.order.status,
           agreedUnitPriceMinor: negotiation.order.agreedUnitPriceMinor,
           quantity: negotiation.order.quantity,
           totalMinor: negotiation.order.totalMinor,
           currency: negotiation.order.currency,
+          // Structured frozen terms (captured at agreement) plus the listing's
+          // live values, so the confirm gate can render old vs new without
+          // parsing the free-text blockReason.
+          frozenListPriceMinor: negotiation.order.frozenListPriceMinor,
+          frozenDeliveryDays: negotiation.order.frozenDeliveryDays,
+          frozenSpecVersion: negotiation.order.frozenSpecVersion,
+          frozenTermsVersion: negotiation.order.frozenTermsVersion,
+          liveListPriceMinor: negotiation.order.listing.listPriceMinor,
+          liveDeliveryDays: negotiation.order.listing.deliveryDays,
+          liveTermsVersion: negotiation.order.listing.termsVersion,
+          liveSpecVersion: negotiation.item.specVersion,
           blockReason: negotiation.order.blockReason,
           authorizedAt: negotiation.order.authorizedAt,
           createdAt: negotiation.order.createdAt,

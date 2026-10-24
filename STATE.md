@@ -13,16 +13,21 @@ Updated: 2026-10-24 (Asia/Calcutta)
 - **Increment 2 — DONE.** `src/lib/negotiation.ts` deterministic engine;
   `src/lib/negotiation.test.ts` 17 passing Vitest tests; DB orchestration in
   `src/lib/negotiation-service.ts` (rounds, status roll-up, recommended deal).
-- **Increment 3 — DONE.** `/vendor` dashboard: pending offers with
-  ACCEPT / REJECT / COUNTER, auto-decided offers read-only; accepting creates
-  the order with a server-computed total.
-- **Increment 4 — DONE.** `/` buyer storefront and `/negotiation/[id]`
-  transcript; AUTHORIZE → CONFIRM order flow; buyer DTOs exclude floors and
-  thresholds.
-- **Increment 5 — DONE.** Terms frozen at agreement; confirm re-reads
-  listing/item and sets order `BLOCKED` with old → new values; vendor
-  "Simulate supplier repricing" control.
+- **Increment 3 — DONE (UI restructure in progress).** `/vendor` review desk:
+  pending offers with ACCEPT / REJECT / COUNTER, auto-decided offers
+  read-only; accepting creates the order with a server-computed total.
+- **Increment 4 — DONE (UI restructure in progress).** `/` buyer workspace and
+  `/negotiation/[id]` transcript; AUTHORIZE → CONFIRM order flow; buyer DTOs
+  exclude floors and thresholds.
+- **Increment 5 — DONE (UI restructure in progress).** Terms frozen at
+  agreement; confirm re-reads listing/item and sets order `BLOCKED` with
+  old → new values; vendor "Simulate supplier repricing" control.
 - **Increment 6 — DONE.** This README + STATE.
+
+Server flow is verified independently of the UI by `scripts/e2e.ts`
+(accept → authorize → confirm, and reprice → BLOCKED); unit tests cover the
+pure engine. UI layout is being restructured to a modern workspace shell after
+design feedback; functionality is unchanged by that work.
 
 ## How to resume
 
@@ -30,6 +35,7 @@ Updated: 2026-10-24 (Asia/Calcutta)
 cd C:\Users\silen\Downloads\commerceos
 npm run dev            # http://localhost:3000
 npm run test           # engine unit tests
+npx tsx scripts/e2e.ts # server flow: confirm + reprice block
 npx prisma migrate status
 ```
 
@@ -56,4 +62,6 @@ npx prisma migrate status
 ## Backups
 
 Files edited after the scaffold were copied to `<name>.bak.<timestamp>` before
-editing (see `package.json.bak.*`, `app/*.bak.*`, `README.md.bak.*`).
+editing, and a git checkpoint commit captures the working data layer plus the
+first UI pass. The original create-next-app shell was moved to
+`_boilerplate_app/` (not deleted) when the app moved under `src/`.
