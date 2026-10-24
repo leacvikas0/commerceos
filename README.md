@@ -1,36 +1,179 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CommerceOS — agent-to-agent procurement, with a human in the loop
 
-## Getting Started
+CommerceOS is a working demo of a procurement flow where **buyer and supplier
+agents negotiate automatically**, **a human vendor decides the borderline
+offers**, and the **buyer authorizes and confirms the order**. There is no
+payment layer: "completing the transaction" means the order is confirmed.
 
-First, run the development server:
+The point of the demo is the division of labour:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- the supplier agent auto-accepts offers at or above a threshold and
+  auto-rejects offers below another threshold — no human involved;
+- offers that fall **between** those thresholds are genuinely borderline, so
+  they go to a vendor dashboard where a person clicks ACCEPT / REJECT /
+  COUNTER;
+- the buyer only sees the buyer side, and must explicitly authorize and then
+  confirm the resulting order;
+- when a negotiation reaches agreement, its terms are frozen. If the supplier
+  reprices afterwards, confirmation is **blocked** and the changed values are
+  shown side by side.
+
+All pricing and decision logic is deterministic TypeScript. No LLM is used for
+pricing, accepting, or confirming.
+
+## Features
+
+- **Deterministic negotiation engine** — every active listing for an item is
+  negotiated in parallel; the buyer opens at its target, clamped to the
+  supplier floor and to the per-unit budget, and counters rejected offers by
+  closing half the gap to list price (max 3 rounds).
+- **Auto-accept / auto-reject thresholds** — supplier-agent decisions are made
+  from two per-listing thresholds, with a borderline band in between.
+- **Vendor dashboard** — pending offers show item, quantity, offered price,
+  supplier floor and buyer, with ACCEPT / REJECT / COUNTER (counter takes a
+  price). Auto-decided offers are listed read-only so the threshold behaviour
+  is visible.
+- **Buyer storefront** — pick an item, set quantity / target unit price /
+  budget cap / deadline, run the negotiation, see every round per supplier and
+  the recommended deal.
+- **Order confirmation** — the order is created server-side when a deal is
+  agreed, with `totalMinor` computed on the server. The buyer authorizes, then
+  confirms. No payment states exist.
+- **Terms-verification gate** — price, delivery days, item spec version and
+  listing terms version are frozen at agreement. On confirm they are re-read;
+  any change sets the order to `BLOCKED` and shows old → new values. A vendor
+  control ("Simulate supplier repricing") edits a listing so this can be
+  demonstrated.
+
+## Tech stack
+
+- Next.js 16 (App Router, Turbopack) + React 19 + TypeScript
+- Tailwind CSS v4
+- Prisma 6 + SQLite
+- Vitest for unit tests
+- Server Actions for every mutation (no API routes needed)
+
+## Project structure
+
+```
+commerceos/
+├─ app/                          (Next.js App Router)
+│  ├─ layout.tsx                 root layout, fonts, nav
+│  ├─ globals.css                design tokens, paper texture, base styles
+│  ├─ page.tsx                   buyer storefront + recent negotiations
+│  ├─ actions.ts                 server actions (start, vendor decisions,
+│  │                             authorize, confirm, simulate repricing)
+│  ├─ vendor/page.tsx            vendor desk (pending + auto-decided offers)
+│  └─ negotiation/[id]/page.tsx  buyer transcript, deal, order flow
+├─ components/                   shared UI pieces
+├─ lib/
+│  ├─ negotiation.ts             pure engine: decision bands, counters,
+│  │                             status roll-up, recommendDeal
+│  ├─ negotiation.test.ts        unit tests for the engine
+│  ├─ negotiation-service.ts     DB orchestration: rounds, status, order,
+│  │                             confirm gate, repricing simulation
+│  ├─ queries.ts                 read models (buyer DTOs exclude floors)
+│  ├─ db.ts                      Prisma client singleton
+│  └─ format.ts                  integer-minor money parsing/formatting
+├─ prisma/
+│  ├─ schema.prisma              Item, Supplier, Listing, Buyer,
+│  │                             Negotiation, Offer, Order
+│  ├─ seed.ts                    small readable seed (2 items, 3 suppliers,
+│  │                             5 listings, 1 buyer)
+│  └─ migrations/
+└─ scripts/smoke.ts              drives one negotiation against the DB
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Prerequisites: Node.js 20.9+ (tested on Node 24), npm.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cd commerceos
+npm install                 # also runs `prisma generate`
 
-## Learn More
+cp .env.example .env        # DATABASE_URL="file:./dev.db"
+                            # PowerShell: Copy-Item .env.example .env
 
-To learn more about Next.js, take a look at the following resources:
+npx prisma migrate dev      # creates prisma/dev.db and applies migrations
+npx prisma db seed          # seeds 2 items, 3 suppliers, 5 listings, 1 buyer
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+npm run dev                 # http://localhost:3000
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`npm run dev` starts the buyer storefront. The vendor desk is at `/vendor`
+(linked in the top navigation).
 
-## Deploy on Vercel
+Useful commands:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | dev server (Turbopack) |
+| `npm run build` | production build |
+| `npm run test` | Vitest unit tests for the negotiation engine |
+| `npx prisma db seed` | re-seed the demo data |
+| `npx prisma migrate status` | check migration state |
+| `npx tsx scripts/smoke.ts` | run one negotiation and print its rounds |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Demo walkthrough
+
+### Happy path — requirement → negotiation → vendor review → confirmed order
+
+1. Open **http://localhost:3000**. The buyer is "Acme Facilities Group".
+2. Pick **A4 Copy Paper, 80 gsm**, set quantity `100`, target unit price
+   `27.00`, budget cap `4,000.00`, deadline `7` days. Submit.
+3. The negotiation page opens with one row per supplier. Each row shows its
+   rounds and decisions. With the seed data the opening offers land in the
+   borderline band, so the status is **Awaiting vendor**.
+4. Click **Vendor desk** in the navigation (`/vendor`). The pending offers are
+   listed with the supplier floor next to the offered price.
+5. On one offer click **Accept**. The offer is stamped accepted, the
+   negotiation becomes **Agreed**, and an order is created with a
+   server-computed total.
+6. Go back to the negotiation (link from the buyer page's recent ledger, or
+   the browser back button). The recommended deal is shown. Click
+   **Authorize order**, then **Confirm order**.
+7. The order is **Confirmed**. The page shows the confirmed total and the
+   frozen terms.
+
+To see the other decision bands on the same page, try a very low target (the
+supplier agent auto-rejects, then the buyer counters) or a high target (the
+supplier agent auto-accepts without vendor involvement). The vendor desk lists
+both kinds read-only.
+
+### Repricing-block demo (terms verification gate)
+
+1. Run the happy path up to the point where the vendor **accepts** an offer
+   (step 5 above). Do not confirm yet.
+2. On `/vendor`, find the listing for that supplier under **Listings** and
+   click **Simulate supplier repricing**. The list price rises 15% and the
+   terms version gets a new revision.
+3. Return to the negotiation page, click **Authorize order**, then
+   **Confirm order**.
+4. Confirmation is blocked: the order shows **Blocked — terms changed** and
+   lists the frozen value next to the live value for each changed term.
+
+## Tests
+
+```bash
+npm run test
+```
+
+The Vitest suite (`lib/negotiation.test.ts`) covers the pure engine:
+
+- the three decision bands (auto-accept at/above the floor, auto-reject below
+  the threshold, borderline stays pending), including exact boundary values;
+- the buyer's opening offer (never below floor, never above the budget cap);
+- the counter-offer maths (half the gap to list, clamped to budget, never
+  moving down);
+- the status roll-up (agreed / awaiting vendor / rejected);
+- `recommendDeal` ordering: lowest price, then earliest delivery, then
+  reliability.
+
+## What works / what is partial
+
+See `STATE.md` for the live status log. In short: increments 1–4 and the
+terms-verification gate (increment 5) are implemented, seeded, and runnable
+from the browser. There is no payment layer by design, no authentication
+(single seeded buyer and a single vendor desk), and no multi-tenant data
+isolation — this is a demo, not a production procurement system.

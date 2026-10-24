@@ -1,0 +1,117 @@
+// CommerceOS — data model (SQLite, no enums: SQLite does not support them,
+// so status/decision fields are strings constrained in TypeScript).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Item {
+  id           String        @id @default(cuid())
+  sku          String        @unique
+  name         String
+  description  String
+  specVersion  String
+  listings     Listing[]
+  negotiations Negotiation[]
+  createdAt    DateTime      @default(now())
+}
+
+model Supplier {
+  id               String    @id @default(cuid())
+  name             String
+  reliabilityScore Int // 0-100, higher is better
+  listings         Listing[]
+  createdAt        DateTime  @default(now())
+}
+
+model Listing {
+  id                   String   @id @default(cuid())
+  itemId               String
+  supplierId           String
+  listPriceMinor       Int // supplier asking price per unit
+  floorPriceMinor      Int // lowest price the supplier will ever accept
+  currency             String
+  stock                Int
+  deliveryDays         Int
+  autoAcceptFloorMinor Int // offer >= this  => auto ACCEPTED
+  autoRejectBelowMinor Int // offer <  this  => auto REJECTED
+  active               Boolean  @default(true)
+  termsVersion         String
+  item                 Item     @relation(fields: [itemId], references: [id])
+  supplier             Supplier @relation(fields: [supplierId], references: [id])
+  offers               Offer[]
+  orders               Order[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Buyer {
+  id             String        @id @default(cuid())
+  name           String
+  currency       String
+  budgetCapMinor Int
+  negotiations   Negotiation[]
+  createdAt      DateTime      @default(now())
+}
+
+model Negotiation {
+  id                   String   @id @default(cuid())
+  buyerId              String
+  itemId               String
+  quantity             Int
+  targetUnitPriceMinor Int
+  budgetCapMinor       Int
+  deadline             DateTime
+  // OPEN | AWAITING_VENDOR | AGREED | REJECTED
+  status               String   @default("OPEN")
+  buyer                Buyer    @relation(fields: [buyerId], references: [id])
+  item                 Item     @relation(fields: [itemId], references: [id])
+  offers               Offer[]
+  order                Order?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Offer {
+  id             String      @id @default(cuid())
+  negotiationId  String
+  listingId      String
+  round          Int
+  unitPriceMinor Int
+  // PENDING | ACCEPTED | REJECTED | COUNTERED
+  decision       String      @default("PENDING")
+  note           String?
+  negotiation    Negotiation @relation(fields: [negotiationId], references: [id])
+  listing        Listing     @relation(fields: [listingId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([negotiationId, listingId, round])
+}
+
+model Order {
+  id                   String      @id @default(cuid())
+  negotiationId        String      @unique
+  listingId            String
+  agreedUnitPriceMinor Int
+  quantity             Int
+  totalMinor           Int
+  currency             String
+  // AWAITING_AUTHORIZATION | CONFIRMED | CANCELLED | BLOCKED
+  status               String      @default("AWAITING_AUTHORIZATION")
+  // Terms frozen when the negotiation reached AGREED (Increment 5 gate).
+  frozenListPriceMinor Int?
+  frozenDeliveryDays   Int?
+  frozenSpecVersion    String?
+  frozenTermsVersion   String?
+  blockReason          String?
+  authorizedAt         DateTime?
+  createdAt            DateTime    @default(now())
+  negotiation          Negotiation @relation(fields: [negotiationId], references: [id])
+  listing              Listing     @relation(fields: [listingId], references: [id])
+}
