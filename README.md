@@ -27,14 +27,35 @@ means the order is confirmed.
 
 ## Screens
 
-| | |
-| --- | --- |
-| **Requisition** — raise a requirement, watch what is in flight, browse the catalogue, review what settled. | **Review desk** — pending offers, the policy band, and accept / reject / counter. |
-| ![Requisition](docs/screenshots/requisition.png) | ![Review desk](docs/screenshots/review-desk.png) |
-| **Awaiting vendor** — every supplier round, the deal facts, and the order gate. | **Confirmed** — agreed, authorized and confirmed against the live terms. |
-| ![Awaiting vendor](docs/screenshots/negotiation-awaiting.png) | ![Confirmed](docs/screenshots/negotiation-confirmed.png) |
-| **Blocked** — terms changed after agreement, so confirmation failed. | **Mobile** — the same screens, tables stacked. |
-| ![Blocked](docs/screenshots/negotiation-blocked.png) | ![Mobile](docs/screenshots/requisition-mobile.png) |
+### Review desk
+
+Pending offers with the policy band, and accept / reject / counter.
+
+![Review desk](docs/screenshots/review-desk.png)
+
+### Negotiation — awaiting vendor
+
+Every supplier round, the deal facts, and the order gate.
+
+![Awaiting vendor](docs/screenshots/negotiation-awaiting.png)
+
+### Negotiation — confirmed
+
+Agreed, authorized and confirmed against the live terms.
+
+![Confirmed](docs/screenshots/negotiation-confirmed.png)
+
+### Negotiation — blocked
+
+Terms changed after agreement, so confirmation failed.
+
+![Blocked](docs/screenshots/negotiation-blocked.png)
+
+### Mobile
+
+The same screens with tables stacked into label/value blocks.
+
+<img width="380" src="docs/screenshots/requisition-mobile.png" alt="Mobile requisition">
 
 ## How it works
 
