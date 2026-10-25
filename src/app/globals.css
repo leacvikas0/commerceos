@@ -124,6 +124,21 @@ button {
   left: 12px;
 }
 
+/* Keyboard focus: the ink outline on every interactive control. */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* The tab strip scrolls, so the ring is drawn inside the tab, never clipped. */
+.tab:focus-visible {
+  outline-offset: -2px;
+}
+
 /* ------------------------------------------------------------------ *
  * Shell — tab strip, no sidebar, no browser chrome.
  * ------------------------------------------------------------------ */
@@ -1451,7 +1466,7 @@ select.input {
   }
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1199px) {
   .main {
     padding: 20px 16px 32px;
   }
@@ -1748,6 +1763,102 @@ select.input {
   .terms__table .terms__value {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+}
+
+/*
+ * Listings & terms carries ten columns and is the one table that cannot fit a
+ * tablet width, so it stacks up to a comfortable desktop instead of clipping
+ * its price columns.
+ */
+@media (max-width: 1279px) {
+  .table--listings {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table--listings thead {
+    display: none;
+  }
+
+  .table--listings tbody {
+    display: block;
+  }
+
+  .table--listings tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+    padding: 14px;
+    border-bottom: 1px solid var(--color-divider);
+  }
+
+  .table--listings tr:last-child {
+    border-bottom: 0;
+  }
+
+  .table--listings td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    font-size: 12px;
+  }
+
+  .table--listings td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  .table--listings td.table__primary {
+    order: -1;
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 2px;
+    font-size: 13px;
+  }
+
+  .table--listings td.table__primary::before {
+    display: none;
+  }
+
+  .table--listings td.table__primary .table__sub {
+    display: inline;
+    margin-top: 0;
+  }
+
+  .table--listings td.table__primary .table__sub::before {
+    content: "·";
+    margin: 0 6px;
+    color: var(--color-muted);
+  }
+
+  .table--listings td.table__action {
+    grid-column: 1 / -1;
+  }
+
+  .table--listings td.table__action::before {
+    display: none;
+  }
+
+  .table--listings td.table__action .btn {
+    width: 100%;
+  }
+
+  .table--listings td.table__num {
+    text-align: left;
   }
 }
 

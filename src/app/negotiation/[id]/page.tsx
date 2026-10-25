@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -27,9 +28,28 @@ import {
 // request, so it is allowed to block instead of prerendering a static shell.
 export const instant = false;
 
-export const metadata: Metadata = {
-  title: "Negotiation",
-};
+// One read per request, shared by the metadata and the page body.
+const getDetail = cache(getNegotiationDetail);
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const detail = await getDetail(id);
+
+  if (!detail) {
+    return { title: "Negotiation not found" };
+  }
+
+  const status = headlineStatus(detail);
+
+  return {
+    title: detail.item.name,
+    description: `${status.label}. ${detail.quantity} units of ${detail.item.name} for ${detail.buyerName}.`,
+  };
+}
 
 export default async function NegotiationPage({
   params,
@@ -42,7 +62,7 @@ export default async function NegotiationPage({
   const { error, notice } = await searchParams;
   await connection();
 
-  const detail = await getNegotiationDetail(id);
+  const detail = await getDetail(id);
   if (!detail) notFound();
 
   const currency =

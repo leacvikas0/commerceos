@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { EmptyNote, StatusWord } from "@/components/ui";
 import { offerDecision } from "@/components/status";
@@ -20,6 +21,7 @@ export function VendorSettled({ offers }: { offers: VendorOffer[] }) {
             <thead>
               <tr>
                 <th>Item</th>
+                <th>Round</th>
                 <th>Supplier</th>
                 <th className="table__num">Price</th>
                 <th>Decision</th>
@@ -30,12 +32,18 @@ export function VendorSettled({ offers }: { offers: VendorOffer[] }) {
               {offers.map((offer) => (
                 <tr key={offer.id}>
                   <td className="table__primary">
-                    <span className="table__name">
+                    <Link
+                      href={`/negotiation/${offer.negotiation.id}`}
+                      className="table__name"
+                    >
                       {offer.negotiation.item.name}
-                    </span>
+                    </Link>
                     <span className="table__sub">
                       {offer.negotiation.item.sku}
                     </span>
+                  </td>
+                  <td data-label="Round">
+                    <span className="tag-round">R{offer.round}</span>
                   </td>
                   <td data-label="Supplier">
                     {offer.listing.supplier.name}

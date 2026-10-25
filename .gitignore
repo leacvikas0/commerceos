@@ -38,6 +38,9 @@ yarn-error.log*
 /prisma/dev.db
 /prisma/dev.db-journal
 
+# local database snapshots taken before re-seeding
+/_backup/
+
 # timestamped backups made while editing existing files
 *.bak.*
 

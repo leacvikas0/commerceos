@@ -2,6 +2,7 @@
  * End-to-end server-flow check (no browser):
  *   negotiation -> vendor accept -> authorize -> confirm -> CONFIRMED
  *   negotiation -> vendor accept -> reprice -> authorize -> confirm -> BLOCKED
+ *   negotiation -> vendor counter -> buyer accepts counter -> AGREED
  *
  * Creates its own rows and removes them again, restoring any listing it
  * reprices, so the seeded demo data is left untouched.
@@ -12,11 +13,13 @@ import assert from "node:assert/strict";
 import { prisma } from "../src/lib/db";
 import {
   authorizeOrder,
+  buyerAcceptCounter,
   confirmOrder,
   ensureOrder,
   runNegotiation,
   simulateSupplierRepricing,
   vendorAcceptOffer,
+  vendorCounterOffer,
 } from "../src/lib/negotiation-service";
 
 const createdNegotiations: string[] = [];
@@ -109,6 +112,37 @@ async function blockedPath() {
   return { negotiationId, orderId: order.id };
 }
 
+async function counterPath() {
+  const negotiationId = await createNegotiation("PAP-A4-80", 2700);
+  const offer = await pendingOffer(negotiationId);
+
+  // The vendor counters at a price inside the band, above its floor.
+  await vendorCounterOffer(offer.id, 2500, "E2E vendor counter");
+
+  const counter = await prisma.offer.findFirstOrThrow({
+    where: {
+      negotiationId,
+      decision: "PENDING",
+      note: { startsWith: "Vendor counter at" },
+    },
+    orderBy: { round: "desc" },
+  });
+  assert.equal(counter.unitPriceMinor, 2500);
+
+  const status = await buyerAcceptCounter(counter.id);
+  assert.equal(status, "AGREED");
+
+  const order = await ensureOrder(negotiationId);
+  assert.ok(order, "order should exist after the buyer accepts the counter");
+  assert.equal(order.agreedUnitPriceMinor, 2500);
+  assert.equal(order.totalMinor, 2500 * 100);
+
+  console.log(
+    `vendor counter OK — counter ${counter.unitPriceMinor}, buyer accepted, order ${order.status}`,
+  );
+  return { negotiationId, orderId: order.id };
+}
+
 async function cleanup() {
   for (const negotiationId of createdNegotiations) {
     await prisma.order.deleteMany({ where: { negotiationId } });
@@ -120,6 +154,7 @@ async function cleanup() {
 async function main() {
   await happyPath();
   await blockedPath();
+  await counterPath();
   await cleanup();
   console.log("e2e OK — demo data restored");
 }

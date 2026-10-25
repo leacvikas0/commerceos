@@ -1,6 +1,12 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../src/lib/db";
+import {
+  authorizeOrder,
+  confirmOrder,
+  ensureOrder,
+  runNegotiation,
+  simulateSupplierRepricing,
+  vendorAcceptOffer,
+} from "../src/lib/negotiation-service";
 
 /**
  * Small, readable demo seed.
@@ -9,6 +15,11 @@ const prisma = new PrismaClient();
  * Listing bands are ordered deliberately:
  *   floorPriceMinor <= autoRejectBelowMinor < autoAcceptFloorMinor <= listPriceMinor
  * so a buyer offer can land in all three decision bands.
+ *
+ * After the catalogue is seeded, three demo negotiations are driven through the
+ * real negotiation service so the app opens with the three states worth
+ * showing: one awaiting the vendor, one confirmed, one blocked by a terms
+ * change. Re-running the seed reproduces exactly this demo state.
  */
 async function main() {
   // Clear in FK-safe order (demo database only).
@@ -120,7 +131,7 @@ async function main() {
     ],
   });
 
-  await prisma.buyer.create({
+  const buyer = await prisma.buyer.create({
     data: {
       name: "Acme Facilities Group",
       currency: "USD",
@@ -128,13 +139,116 @@ async function main() {
     },
   });
 
-  const counts = {
+  const deadline = (days: number) =>
+    new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+  async function openNegotiation(input: {
+    sku: string;
+    quantity: number;
+    targetUnitPriceMinor: number;
+    budgetCapMinor: number;
+  }) {
+    const item = await prisma.item.findFirstOrThrow({
+      where: { sku: input.sku },
+    });
+    const negotiation = await prisma.negotiation.create({
+      data: {
+        buyerId: buyer.id,
+        itemId: item.id,
+        quantity: input.quantity,
+        targetUnitPriceMinor: input.targetUnitPriceMinor,
+        budgetCapMinor: input.budgetCapMinor,
+        deadline: deadline(7),
+        status: "OPEN",
+      },
+    });
+    await runNegotiation(negotiation.id);
+    return negotiation.id;
+  }
+
+  async function pendingOfferFrom(negotiationId: string, supplierName: string) {
+    return prisma.offer.findFirstOrThrow({
+      where: {
+        negotiationId,
+        decision: "PENDING",
+        listing: { supplier: { name: supplierName } },
+      },
+      include: { listing: true },
+    });
+  }
+
+  // 1. Paper, $27.00 target — the opening offers land inside every supplier's
+  //    review band, so this negotiation waits on the vendor desk.
+  const awaitingVendorId = await openNegotiation({
+    sku: "PAP-A4-80",
+    quantity: 100,
+    targetUnitPriceMinor: 2700,
+    budgetCapMinor: 400000,
+  });
+
+  // 2. Paper again — the vendor accepts Meridian's $27.00, the buyer
+  //    authorizes, and the order is confirmed against the live terms.
+  const confirmedId = await openNegotiation({
+    sku: "PAP-A4-80",
+    quantity: 100,
+    targetUnitPriceMinor: 2700,
+    budgetCapMinor: 400000,
+  });
+  const meridianOffer = await pendingOfferFrom(
+    confirmedId,
+    "Meridian Office Goods",
+  );
+  await vendorAcceptOffer(
+    meridianOffer.id,
+    "Vendor accepted this price at the desk.",
+  );
+  const confirmedOrder = await ensureOrder(confirmedId);
+  if (!confirmedOrder) throw new Error("Confirmed demo order was not created");
+  await authorizeOrder(confirmedOrder.id);
+  await confirmOrder(confirmedOrder.id);
+
+  // 3. Gloves, $7.00 target — the vendor accepts, the supplier then reprices
+  //    the listing and changes its terms before confirmation, so the order is
+  //    blocked and nothing is charged.
+  const blockedId = await openNegotiation({
+    sku: "GLV-NIT-M",
+    quantity: 100,
+    targetUnitPriceMinor: 700,
+    budgetCapMinor: 400000,
+  });
+  const meridianGlovesOffer = await pendingOfferFrom(
+    blockedId,
+    "Meridian Office Goods",
+  );
+  await vendorAcceptOffer(
+    meridianGlovesOffer.id,
+    "Vendor accepted this price at the desk.",
+  );
+  const blockedOrder = await ensureOrder(blockedId);
+  if (!blockedOrder) throw new Error("Blocked demo order was not created");
+  await simulateSupplierRepricing(blockedOrder.listingId);
+  await authorizeOrder(blockedOrder.id);
+  await confirmOrder(blockedOrder.id);
+
+  const scenarios = await prisma.negotiation.findMany({
+    where: { id: { in: [awaitingVendorId, confirmedId, blockedId] } },
+    include: { item: true, order: true },
+  });
+
+  console.log("Seed complete:", {
     items: await prisma.item.count(),
     suppliers: await prisma.supplier.count(),
     listings: await prisma.listing.count(),
     buyers: await prisma.buyer.count(),
-  };
-  console.log("Seed complete:", counts);
+    negotiations: await prisma.negotiation.count(),
+  });
+  for (const scenario of scenarios) {
+    console.log(
+      `  ${scenario.item.sku}  negotiation ${scenario.status.padEnd(11)} order ${
+        scenario.order?.status ?? "—"
+      }`,
+    );
+  }
 }
 
 main()
