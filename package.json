@@ -2,6 +2,12 @@
   "name": "commerceos",
   "version": "0.1.0",
   "private": true,
+  "description": "Agent-to-agent procurement demo: deterministic buyer/supplier negotiation with a human vendor desk, buyer authorization and a terms-change confirmation gate.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leacvikas0/commerceos.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
