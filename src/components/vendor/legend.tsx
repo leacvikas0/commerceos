@@ -7,19 +7,15 @@ export function BandLegend() {
     <div className="legend">
       <span className="legend__item">
         <span className="legend__dot legend__dot--green" />
-        Auto-accept at or above the accept floor
+        Auto-accept
       </span>
       <span className="legend__item">
         <span className="legend__dot legend__dot--amber" />
-        Borderline → review queue
+        Borderline
       </span>
       <span className="legend__item">
         <span className="legend__dot legend__dot--red" />
-        Auto-reject below the reject floor
-      </span>
-      <span className="text-ink-faint">
-        The supplier agent settles the outer bands on its own; only the middle
-        band reaches this desk.
+        Auto-reject
       </span>
     </div>
   );

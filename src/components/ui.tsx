@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { StatusDescriptor } from "./status";
+import type { StatusDescriptor, Tone } from "./status";
 
 /** Error / notice strip fed by the actions' ?error= and ?notice= params. */
 export function Banner({
@@ -18,62 +18,41 @@ export function Banner({
       role={isError ? "alert" : "status"}
       className={`banner ${isError ? "banner--error" : "banner--notice"}`}
     >
-      <span className="shrink-0 text-[12px] font-semibold">
-        {isError ? "Error" : "Notice"}
-      </span>
-      <p className="leading-snug">{error ?? notice}</p>
+      <span className="banner__tag">{isError ? "Error" : "Notice"}</span>
+      <p>{error ?? notice}</p>
     </div>
   );
 }
 
-const toneClass: Record<string, string> = {
-  olive: "pill--green",
-  oxblood: "pill--red",
-  ochre: "pill--amber",
-  ink: "pill--gray",
-  faint: "pill--gray",
+const toneClass: Record<Tone, string> = {
+  waiting: "status--waiting",
+  blocked: "status--blocked",
+  confirmed: "status--confirmed",
+  neutral: "status--neutral",
 };
 
-/** A compact status pill. */
-export function StatusStamp({
+/** A 6px dot and a word. Never a filled pill. */
+export function StatusWord({
   status,
-  plain = false,
+  small = false,
 }: {
   status: StatusDescriptor;
-  plain?: boolean;
+  small?: boolean;
 }) {
   return (
-    <span
-      className={`pill ${toneClass[status.tone] ?? "pill--gray"}${
-        plain ? " pill--plain" : ""
-      }`}
-    >
+    <span className={`status ${toneClass[status.tone]}${small ? " status--sm" : ""}`}>
+      <span className="status__dot" />
       {status.label}
     </span>
   );
 }
 
-/** Label / value row used in the compact cards. */
-export function Leader({
-  label,
-  value,
-  mono = false,
-}: {
-  label: string;
-  value: ReactNode;
-  mono?: boolean;
-}) {
-  return (
-    <div className="flex items-baseline justify-between gap-3 py-1">
-      <span className="text-[12px] text-ink-faint">{label}</span>
-      <span className={`text-[12.5px] text-ink ${mono ? "mono num" : ""}`}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-/** Quiet empty state used inside cards and tables. */
+/** Quiet empty state used inside modules. */
 export function EmptyNote({ children }: { children: ReactNode }) {
   return <p className="empty">{children}</p>;
+}
+
+/** Metadata separator used in page heads and table cells. */
+export function Sep() {
+  return <span className="sep">·</span>;
 }

@@ -162,3 +162,147 @@ Required fix: before building all three pages, produce a static 1440×900 style 
 - The open-decision note is honest about the one thing it is unsure of (the target default) — it just needs a real answer (M1), not a poll.
 
 VERDICT: CHANGES REQUIRED
+
+---
+
+# CRITIQUE — round 2
+
+**Reviewed:** `PLAN.md` 963 lines, mtime 24 Oct 20:47; plate renders 20:22–20:30 (`_shots/plate-neg-1440.png`, `plate-neg-1440-full.png`, `plate-neg-390.png`, `plate-home-1440.png`, `plate-home-390.png`, `plate-vendor-1440.png`, `plate-vendor-390.png`), `_shots/plate/plate.css`, `neg.html`, `pages.html`. The plan changed at 20:47 while I was reading it; the contrast numbers were corrected in that edit and now match my calculation (`--ink` 16.69, `--ink-2` 7.38, `--ink-3` 5.12, `--waiting` 5.62, `--blocked` 7.27, `--agreed` 7.35), so this review is against the 20:47 version and does not re-raise the contrast issue.
+
+**Overall judgement.** The concept passes. This is no longer an art piece or a reskin: the order line is the page's spine, the supplier board is the comparison, the policy band is the vendor's instrument, and the plate reads as a considered document rather than generic admin. The lane deletion is the right call, not a dodge — the engine opens every supplier at the target, so the lane's x-axis is degenerate by construction, and the replacement carries more decision-relevant information. What remains is not another direction; it is convergence, and the drift is now between the plan and its own plate: the type scale in §2.3/§5.2 is 34/22 while the plate renders 24–26/15; the board's price rule says `min(offers)` while the plate shows the latest offer; the countered state hard-codes `$27.00` and detects itself by parsing a note; the first screen says "3-day delivery" when the fastest is 2; the vendor queue says "2m ago" three times while §4.6 bans relative time; and the date format the copy and the plate require is not what `format.ts` produces. Those are real, but they are a day of work, not a rewrite. The plan is close; it is not yet shippable.
+
+**Axis verdicts (round 2).**
+
+| # | Axis | Verdict | Why |
+|---|---|---|---|
+| 1 | Fixes the real complaint | **PASS** | The plate is a specific product, not an art piece or a reskin; the order line carries the action, the board the comparison, the band the vendor decision. The 390 composer is the one usability failure (B2). |
+| 2 | IA, page jobs, nav, duplication | **PASS** | Home lists in-flight *and* settled; vendor queue is the 3 real pending A4 offers; one rail; no duplicate budget cards; M10 dropped deliberately (separate routes, rail link) is acceptable. Only the §2.4 `REJECTED` definition is loose (m6). |
+| 3 | Layout, wireframe, above-fold, 1440/390 | **PASS at 1440; FAIL at 390 composer** | 1440 is concrete and above-fold; at 390 the composer is 1-up, the price block is top-right, and "Start negotiation" sits at y=866 in an 844 viewport, contradicting §8.1/§8.2 and the 390 wireframe (B2). |
+| 4a | Price-lane encoding | **N/A (deleted; right call)** | The engine opens all three R1 offers at `$27.00`; only two distinct prices exist; a shared x-axis is empty by construction. The board's price rule is the replacement's one data bug (M1). |
+| 4b | Policy band (offered vs floor, no legend) | **PASS** | Detail geometry is exact: Meridian floor 3.7%, reject 28.4%, accept 65.4%, offer 53.1%, list 96.3%; caption `$2.00` over reject / `$1.00` under accept is correct; labels + ticks + caption make it legible without a legend. The queue mini bands are wrong (M7). |
+| 4c | Blocked-order `blockReason` robustness | **PASS** | Structural frozen-vs-live comparison, no parsing; DTO exposes `frozen*`/`live*` (`queries.ts:130-154`); null-frozen fallback; the plate's "2 OF 4 TERMS CHANGED" is right. The residual note-prefix parse is in the countered state (M2), not here. |
+| 5 | Visual system | **PASS** | No cards, no gradients/glass/glow, warm plane + hairlines, Archivo + Plex Mono, tabular money, status = square + word. The type table's "Use" column contradicts the plate (M6); the item-picker 4px and reject border are minors (m7). |
+| 6 | Components and states inventory | **PASS with one gap** | Five order-line states complete and matched to real actions; `buyerAcceptCounterAction` exists (`actions.ts:118-133`); the transcript table omits the `COUNTERED` decision row (m12); `Field`/composer props are incomplete (m3). |
+| 7 | Copy | **PASS with fixes** | Restrained, specific, no hype or fake precision. "3-day" (M5), "2m ago" (M4), "Your counter" (m2), "2 of 3" (m2), the countered price (M2), and the date format (B1) are wrong. |
+| 8 | Responsive / a11y | **PASS at 390/768 no horizontal scroll; composer stacking fails** | Measured `scrollWidth === clientWidth` at 390 (376/376) and 768 (753/753); ledger/band/board/transcript/queue stack correctly; the composer does not (B2); decision buttons are not full-width (m4); 390 h1 inverts (M6). A11y order line, band, picker, focus, reduced motion are strong. |
+| 9 | Implementability | **PASS with one blocker** | Tailwind v4 + `globals.css`, no new deps, no client JS except the justified composer island; `src/lib` boundary respected. The date formatter is not implementable as written (B1); `targetPriceMinor` (M1), `formatMinorInput` (m3), the note-prefix parse (M2) are the rest. |
+| 10 | Scope discipline / order | **PASS** | The order is sensible; the server boundary is explicit; the plate checkpoint was delivered; the cleanup list is real; the 20:47 contrast correction shows the process is working. |
+
+## Your five questions, answered
+
+1. **§4.3 arithmetic vs seed.** The detail band is exact (Meridian 3.7 / 28.4 / 65.4 / 53.1 / 96.3; caption `$2.00` over reject, `$1.00` under accept). The queue mini bands are not computed from the same formula: Northwind renders 30 / 34 / 64 with marker 46, correct is 22.2 / 59.3 / 34.6; Atlas renders 27 / 38 / 65 with marker 86, correct is 21.1 / 61.6 / 55.8. The Atlas marker at 86% says a `$30.50` offer is above the `$31.00` accept line; it is not. Also the 0→reject zone is named "below-floor" though it includes floor→reject, and the two auto-decided caption cases are unreachable in the queue.
+2. **Is deleting the lane a dodge?** No. With target `$27.00`, `initialBuyerOfferMinor` returns `$27.00` for all three R1 offers (`negotiation.ts:63-69`), so the lane's x-axis collapses to one point by construction; only Meridian and Atlas have a second price. A shared price axis cannot encode four offers. The board + order line is the better instrument, and the plate proves it: the buyer reads the commit chain on the spine and the supplier comparison across the board. Keep the deletion.
+3. **§3.2.1 five states vs `actions.ts`.** The states map to real actions: pending (no action), countered (`buyerAcceptCounterAction`, `offerId` + `negotiationId`), agreed (`authorizeOrderAction`), blocked (new requisition), confirmed (none). Two problems: the countered state's `$27.00` is the buyer's target, not the vendor's counter price (M2), and its detection is `isVendorCounter` = note starts with "Vendor counter at" (`status.ts:77-79`), a display-string parse. Use the structured `COUNTERED` decision on the prior offer for the same listing, or ask the Lead for a source field.
+4. **§8.2 390 stacking.** Ledger, band labels, board, transcript, queue, order line all stack correctly and the page has no horizontal overflow (measured). The composer does not: `.terms` is 1 column (343.68px) instead of 2×2, the picker's price block is top-right (x=268, y=292) instead of under the facts, and "Start negotiation" is at y=866 in an 844 viewport. The decision buttons are max-content (136 / 76 / 69px) though §5.5/§8.2 say full-width. At 768 the 5-column terms grid's max-content button runs 14px past the content box (button right 747, content right 733; no scroll).
+5. **Any unverifiable claim.** Yes: the date format (B1), "no relative timestamps" (M4), "3-day delivery" (M5), "cap $400,000.00" (m1), "no element with both a background and a border" (m7), "every state reachable from /" (m6), and the round-1 misquote (m8). The contrast numbers are now correct.
+
+## What the rewrite fixed
+
+- B1 fixed: caption arithmetic `$2.00` / `$1.00`, five boundary cases, and the detail band is exact.
+- B2 / B3 / B6 moot: the lane is gone; the deletion is the right call.
+- B4 fixed: the vendor queue is the three real pending A4 offers, not an invented gloves row.
+- B5 fixed: `authorizedAt` labelled `Authorized`, `createdAt` labelled `Order created`; no invented `confirmedAt`.
+- B6 fixed: one order line, five states, real counts (4 offers, 2 rounds, 1 accepted, 2 superseded).
+- M1 fixed: the composer island defaults the target to 85% of the selected item's lowest list, and follows the item.
+- M2 fixed: five breakpoints, queue flip, 390 stacking rules (except the composer, B2).
+- M3 fixed: lane gone; one vocabulary; no pastel pills; status = square + word.
+- M4 fixed: labels row decoupled from x positions; 2-row at <768; band geometry correct.
+- M5 fixed: rule-separated picker rows; no white boxes; selected = sunk + left rule.
+- M6 fixed: column widths and no `min-width` tables; 390 no horizontal scroll measured.
+- M7 fixed: blocked strip stacks; structural frozen/live diff.
+- M8 fixed: home shows 1 in flight + 2 settled; no state is hidden.
+- M9 fixed: no right rail; the order line carries the action.
+- M10 dropped deliberately: separate routes, rail link, no view-as mode — acceptable; no data leak.
+- M11 fixed: band `aria-hidden` + hidden sentence; statuses are text + square.
+- M12 fixed: no entrance animations; 120ms hover only; reduced-motion removal.
+- M13 fixed: Appendix A citations re-checked against the code read in round 1; they are correct: `negotiation/[id]/page.tsx:138`, `rounds-matrix.tsx:24`, `order-gate.tsx:116/124-131`, `page.tsx:47/104/109`, `vendor/page.tsx:51-83`, `offer-detail.tsx:23-26/53-56`, `requisition-form.tsx:31-49`, `page-header.tsx:37-41`, `seed.ts:127`, `negotiation-service.ts:244-245`, `schema.prisma` Order — all correct.
+- M14 fixed: no `blockReason` parsing; frozen/live fields; null fallback.
+- M15 fixed: the plate is built, rendered, measured; this is the proof the round-1 critique asked for.
+- The contrast numbers were corrected at 20:47 and now match my calculation.
+
+## BLOCKER
+
+**B1. The date format the copy and the plate require is not what the code produces, and the plan claims it is.**
+What's wrong: §4.6 says `formatDate` → `24 Oct 2026`, `formatDateTime` → `24 Oct, 19:21` (`PLAN.md:555`), and §8.4 says dates are formatted by `format.ts` only. `src/lib/format.ts:32-47` uses `en-US` with day/month/year and a 12-hour clock, so it produces `Oct 31, 2026` and `Oct 24, 07:21 PM`. `src/lib/**` is out of the design's scope. The plate (`neg.html` meta, transcript, confirmed step) and §7.3's copy all use the non-existent format.
+Evidence: `PLAN.md:555`, `PLAN.md:877`; `src/lib/format.ts:32-47`; `_shots/plate/neg.html` ("filed 24 Oct, 19:21", "19:21", "19:59").
+Required fix: either the Lead changes `format.ts` (one-line Intl options: `en-GB`/manual day-month order and `hour12: false`) and the plan says so, or the plan adopts the lib's existing `Oct 31, 2026` / `Oct 24, 07:21 PM` in §4.6, §7.3 and the plate. Do not ship the claim that the current lib produces the desired format.
+
+**B2. The 390 composer contradicts the plan's own stacking rules and buries the primary action below the fold.**
+What's wrong: §8.1 says at <480 "terms 2×2; picker price block drops under the facts" (`PLAN.md:840`); §8.2 says "<768 terms 2×2, button full width" and "picker price block right-aligned under facts" (`PLAN.md:848-850`); §3.1's 390 wireframe shows the same (`PLAN.md:206`). The plate at 390 renders `.terms` as one column (343.68px), the picker's price at top-right (x=268, y=292), and "Start negotiation" at y=866 in an 844 viewport. The ledger, band, board, transcript and queue stack correctly; the composer is the failure.
+Evidence: measured at 390: `.terms` `grid-template-columns: 343.68px`; start button `{x:16, y:866, w:344, h:40, inViewport:false}`; picker price `{x:268, y:292}`; `_shots/plate-home-390.png`; `_shots/plate/plate.css:483` (`.terms { grid-template-columns: 1fr; }` at <480).
+Required fix: implement the plan's 2×2 terms grid and price-under-facts at <768 (the button then lands above the fold), or change the plan to accept the 1-up form and move the button up (e.g., submit row before the hint) and say so. As submitted, the proof and the spec disagree on the home page's primary job.
+
+## MAJOR
+
+**M1. The board's price rule says `min(offers)`, but the plate (correctly) shows the latest offer; the same paragraph uses a non-existent field.**
+What's wrong: §3.2.3 says the board price is "best price (lowest offer price for that supplier)" and defines it as `min(offers[].unitPriceMinor)` (`PLAN.md:346`, `PLAN.md:354`). The plate's Atlas column shows `$30.50` (the latest R2 offer) with `+$3.50 over your target`; the minimum is `$27.00` (R1, rejected). The state row is "the latest offer" (`PLAN.md:350`), so the min-price + latest-state pair is incoherent: Atlas would show `$27.00` with `AWAITING VENDOR` for a `$30.50` pending offer. The plate's latest-price rule is the defensible one. The same paragraph computes delta against `negotiation.targetPriceMinor`, which does not exist; the DTO field is `targetUnitPriceMinor` (`queries.ts:119`).
+Evidence: `PLAN.md:346/350/353/354`; `_shots/plate/neg.html` Atlas `$30.50`, delta `+$3.50`; `src/lib/queries.ts:119`; `_shots/plate-neg-1440.png`.
+Required fix: define the board price as "the price in play = the latest offer's price", with the trail for history; keep the rejected-only case as `Declined`; change `targetPriceMinor` to `targetUnitPriceMinor`. State the rule once and make the plate the reference.
+
+**M2. The "Supplier countered" state hard-codes `$27.00` and detects itself by parsing a display note.**
+What's wrong: §3.2.1 renders the countered state as `$27.00 /unit` / `Accept $27.00` (`PLAN.md:306`), and §7.3 repeats it (`PLAN.md:762`). A vendor counter is a *different* price: `vendorCounterOffer` creates a new `PENDING` offer at the counter price and marks the prior offer `COUNTERED` (`negotiation-service.ts:254-267`); `buyerAcceptCounterAction` takes that new offer's `offerId` (`actions.ts:118-133`). The state must use the counter offer's `unitPriceMinor`, and the button must say `Accept $X` for that X. The state's predicate is `isVendorCounter` = note starts with "Vendor counter at" (`PLAN.md:785`; `status.ts:77-79`) — the same class of display-string parse the plan correctly banned for `blockReason`. A note rewrite silently turns a vendor counter into a "buyer offer".
+Evidence: `PLAN.md:306/762/785`; `src/lib/negotiation-service.ts:254-267`; `src/app/actions.ts:118-133`; `src/components/status.ts:77-79`.
+Required fix: use the counter offer's price and id; derive the state structurally from the preceding offer's `decision === "COUNTERED"` for the same listing (or ask the Lead for a source field). Update the example to a real counter price, not `$27.00`.
+
+**M3. The spine labels step 1 "Agreed"/"Price agreed" while the pending state says "No price agreed yet".**
+What's wrong: §3.2.1 says "Step 1 is `Agreed`, step 2 `Authorize`, step 3 `Confirm`" (`PLAN.md:301`); the pending row's value is `No price agreed yet` (`PLAN.md:305`); §7.3's label row and §8.4's a11y label both say `AGREED` (`PLAN.md:761`, `PLAN.md:868`); the plate renders `Price agreed` above `No price agreed yet` (`neg.html:59-60`). The slot is an action ("AUTHORIZE"/"CONFIRM" are verbs) but the label is a past-tense statement, and "Agreed" is not in the §4.5 vocabulary.
+Evidence: `PLAN.md:301/305/761/868`; `_shots/plate/neg.html:59-60`; `_shots/plate-neg-1440.png`.
+Required fix: label the steps `AGREE` / `AUTHORIZE` / `CONFIRM` (actions), or use the vocabulary's `ACCEPTED` only when the step is done; change the plate's `Price agreed` and the plan's `AGREED` together.
+
+**M4. The plate and the §3.3 wireframe use "2m ago" three times, while §4.6/§9.12 ban relative time anywhere.**
+What's wrong: §4.6 says "No relative time (`2m ago`) anywhere" (`PLAN.md:556`); §9.12 lists "Fake liveness. Relative timestamps ('2m ago')" as a trap (`PLAN.md:898`). The §3.3 wireframe prints `2m ago` on all three queue rows (`PLAN.md:373/378/383`), and the plate ships it three times (`pages.html:176/190/204`). The resubmission message claims there are none. This is a direct self-contradiction and a §9.5 invented-data violation.
+Evidence: `PLAN.md:373/378/383/556/898`; `_shots/plate/pages.html:176/190/204`; `_shots/plate-vendor-1440.png`.
+Required fix: replace with the absolute filed/offer time (e.g., `24 Oct, 19:21`) or remove; update the wireframe and the plate. The demo's clock is not the data's clock — the plan's own sentence is right.
+
+**M5. The home's first-screen item facts say "3-day delivery" when the fastest supplier is 2 days.**
+What's wrong: §7.2's copy table says `3 suppliers · 3-day delivery · spec-2026.1` (`PLAN.md:743`), and the plate renders it (`pages.html:70`). The seed's A4 deliveries are Meridian 5, Northwind 3, Atlas 2 (`seed.ts:71-77`, `58-64`, `84-90`), so the fastest is 2 days. The plan's own 1440 and 390 wireframes say `fastest 2 days` (`PLAN.md:133`, `PLAN.md:178`), and §3.2.1 says `Delivery 5 / 3 / 2 days` (`PLAN.md:212`). This is the §9.5 invented-data trap inside the plan's own copy table.
+Evidence: `PLAN.md:133/178/212/743`; `prisma/seed.ts:58-64/71-77/84-90`; `_shots/plate/pages.html:70`.
+Required fix: `3 suppliers · fastest 2 days · spec-2026.1` in §7.2 and the plate; do not describe an item by one supplier's delivery time.
+
+**M6. The page grammar's type scale contradicts the plate the plan says is already implemented.**
+What's wrong: §2.3 says page `h1` 34px and section `h2` 22px (`PLAN.md:101-102`); §5.2 defines `t-display` 34 "page h1", `t-h1` 26 "negotiation h1", `t-h1-sm` 24 "home and vendor h1", `t-h2` 22 "section h2", `t-h3` 15 (`PLAN.md:597-604`). The plate renders home/vendor h1 24, negotiation h1 26, section h2 15 (`t-h3`), vendor detail name 22 (`t-h2`); measured. An implementer following §2.3/§5.2 builds a heavier hierarchy than the plate, and `t-display` is unused in the plate. The 390 override reduces `t-h1` to 22 but leaves `t-h1-sm` at 24, so the negotiation h1 is smaller than the home h1 at 390.
+Evidence: `PLAN.md:101-102/597-604`; measured 1440: `neg.html` h1 26, `pages.html` h1 24, section h2 15; `plate.css:55-58`, `plate.css:480`; `_shots/plate-neg-390.png`.
+Required fix: adopt the plate's scale in §2.3/§5.2 — home/vendor h1 24, negotiation h1 26, section h2 15, vendor detail name 22, board price 30; delete `t-display` or reserve it for a true display moment; apply the mobile 22px rule to both h1 classes. The plate's hierarchy is the better one; change the spec, not the render.
+
+**M7. The vendor queue's mini bands are hand-tuned and wrong for two of three rows.**
+What's wrong: §4.3's formula is `lo = min(floor, offer) - 4%`, `hi = max(list, offer) + 4%`, zones at `pct(reject)` / `pct(accept)`, marker at `pct(offer)` (`PLAN.md:486-497`). The detail band matches exactly (Meridian 3.7 / 28.4 / 65.4 / 53.1 / 96.3). The queue's mini bands do not: Northwind renders 30 / 34 / 64 with marker 46 (correct 22.2 / 59.3 / 34.6); Atlas renders 27 / 38 / 65 with marker 86 (correct 21.1 / 61.6 / 55.8). The Atlas marker at 86% places a `$30.50` offer in the above-accept zone even though it is below the `$31.00` accept line; the queue would tell the vendor the wrong thing about the decision in front of them.
+Evidence: `PLAN.md:486-497`; `_shots/plate/pages.html:184-189` (Northwind), `199-202` (Atlas); `_shots/plate-vendor-1440.png`; seed `seed.ts:58-64/71-77/84-90`.
+Required fix: compute the mini bands from the same formula in the plate (and in the implementation); the queue's scannability claim depends on it.
+
+## MINOR
+
+**m1. Cap `$400,000.00` is a 100× units error.** §3.2.1 and Appendix A say `cap $400,000.00` (`PLAN.md:212`, `PLAN.md:958`); the real cap is `400000` minor units = `$4,000.00` (the same section's wireframe at `PLAN.md:219` and the plate show `$4,000.00`; the buyer's budget is `250000` at `seed.ts:127`). This is exactly the units bug the plan warns about; correct both.
+
+**m2. Two copy claims overstate what happened.** §7.3 says "Your counter was sent" for the engine's R2 counter (`PLAN.md:790`; `neg.html:182`) — the buyer did not send it; say "The agent countered at $30.50 — awaiting the supplier" or "A counter was sent". And "2 of 3 suppliers are considering your price" (`PLAN.md:305/762`) while the board shows three `AWAITING VENDOR` states (Meridian/Northwind at `$27.00`, Atlas at `$30.50`); say "2 of 3 are at your target; Atlas countered at $30.50" or let the board's states carry it.
+
+**m3. Two implementability details are unspecified.** §4.1 says "nothing is divided by 100 in a component" (`PLAN.md:455`), but §6.1's `formatMinorInput(minor) = (minor / 100).toFixed(2)` does exactly that (`PLAN.md:708`); exempt the input helper explicitly or use a string-based formatter. The `RequisitionComposer` props omit `defaultDeadlineDays` (14) and `defaultBudgetMinor` (2500) from §3.1, and `Field` has only `defaultValue` although the target is controlled (`PLAN.md:682/695`); add `value`/`onChange` or say the island renders a raw input.
+
+**m4. The mobile button rule is contradictory, and the 768 terms grid overflows its content box.** At 390 the decision block is one column (343.68px) but Accept/Reject/Send are 136/76/69px (max-content), while §5.5/§8.2 say the stacked mobile decision block's buttons are full width (`PLAN.md:644/857`); the composer's button is full width, which §5.5's "never full-width except the decision block" forbids. Define one rule. At 768 the 5-column terms grid's max-content button runs 14px past the content box (button right 747, content right 733; page `scrollWidth` 753 = `clientWidth` 753, so no scroll but the button is misaligned); switch to 2×2 at ≤1023 or let the button wrap.
+
+**m5. The home budget field does not show the derived per-unit ceiling.** §4.1 says the ceiling is "shown next to the cap" (`PLAN.md:471`); the home field shows `$2,500.00` with no `$50.00/unit` under it (the negotiation meta shows `$4,000.00 ($40.00/unit)`). Either add the derived line under the budget field (it depends on quantity) or scope the rule to the negotiation meta; otherwise the buyer cannot see the cap's per-unit effect before starting.
+
+**m6. Three state-coverage claims are loose.** §2.4's in-flight definition puts a no-order `REJECTED` negotiation in flight (`PLAN.md:108`); add `REJECTED` to settled. §9.10 says every vocabulary state is reachable from `/` (`PLAN.md:896`), but `Cancelled` has no seed and no action; seed one or scope the claim. §4.3's `offer > accept` / `offer < reject` caption cases (`PLAN.md:509-513`) cannot occur in the vendor queue, which shows only in-band pending offers; delete them or state where they render.
+
+**m7. Three spec self-contradictions.** §9.7 says "no element with both a background and a border except form controls" (`PLAN.md:893`), but the selected picker row has a sunk fill + 2px ink left edge (`plate.css:193`) and the blocked strip has a wash + 1px top rule (§3.2.2); rewrite to "no full border around a filled block; a single left rule plus a fill is allowed for selection/state". §5.3 puts 4px on "the item-picker box" (`PLAN.md:618`), but the plate's rows are square and rule-separated (`plate.css:186-191`, no radius); drop the item-picker from the radius list. §3.3 says Reject has a 1px `--blocked` border (`PLAN.md:445`), while §5.5 and the plate use `--rule-strong` (`PLAN.md:641`; `plate.css:157`); pick the plate's quieter border.
+
+**m8. The round-2 self-correction misquotes round 1.** §4.3 says round 1 claimed "`$1.00` over and `$2.00` under" (`PLAN.md:515`); round 1 actually said "`$1.00` over the reject floor and `$1.00` under the accept floor" (`CRITIQUE.md:27`). The current caption is correct, but the narrative misstates the prior error; fix the record.
+
+**m9. The band's left zone is named "below-floor" though it includes floor→reject.** §4.3 calls `0 → pct(reject)` "below-floor" (`PLAN.md:495`); a `$24.50` offer is above the `$23.00` floor and below the `$25.00` reject line, so the name is false. Rename to "below the reject line" (and any legend), or a vendor reading "BELOW FLOOR" is misled.
+
+**m10. The reprice action is hidden at 390 with no rule.** The plate's "Simulate repricing" buttons are 0×0 at 390; §3.3/§8.2 say the listing keeps supplier/list/floor below 1024 but do not say where the action goes (`PLAN.md:446/858`). State it — otherwise the blocked-order demo flow is desktop-only.
+
+**m11. "Exactly one submit button on the page" is false for the vendor page.** §3.2.1 says this (`PLAN.md:314`), but the vendor page has Accept/Reject/Counter/Send plus three reprice buttons. Scope the rule to the buyer negotiation page or say "one primary action per step".
+
+**m12. The transcript table omits the `COUNTERED` decision row.** §7.3's table has PENDING (3), ACCEPTED (2), REJECTED, SUPERSEDED (`PLAN.md:785-795`); the vendor counter marks the buyer's prior offer `COUNTERED` (`negotiation-service.ts:255-258`), and the plan assigns "Countered" to the vendor's new PENDING offer (line 791), leaving the prior row undefined. Add `COUNTERED` → `Countered` / "The supplier replied with a new price." and give the vendor's pending counter a distinct word ("Awaiting you"), or document the two-row duplicate.
+
+## What is genuinely good
+
+- The lane deletion is evidence-led, not a dodge: the engine opens every supplier at the target, so the lane's x-axis is degenerate; the board + order line is the better instrument. This is the right kind of self-correction.
+- The order line is a real spine: five states, one action, the commit chain reads in order, and the blocked/confirmed states use `authorizedAt`/`createdAt` instead of an invented timestamp.
+- The plate is real, rendered, measured, and mostly high quality: the warm plane, the Archivo/Plex Mono split, tabular money, the 6px status square, the no-cards rule, and the band geometry all read as a considered product, not generic admin.
+- The vendor page is the strongest surface: the queue + detail band + decision block is specific to this domain, and the blocked strip's structural frozen-vs-live diff is robust and honest.
+- The 390 work is mostly right: no horizontal overflow (376/376), the ledger/band/board/transcript/queue stack, and the mobile type still reads. The composer is the one exception.
+- The copy is restrained: no hype, no fake precision, no "successfully"; the "Nothing was charged, and the agreed price no longer holds" and "no payment processed in this demo" lines are exactly right.
+- The process is working: the plate-before-build checkpoint was delivered, and the 20:47 contrast correction shows the plan is being checked against evidence rather than defended.
+
+VERDICT: CHANGES REQUIRED

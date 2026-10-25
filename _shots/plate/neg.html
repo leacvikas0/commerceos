@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CommerceOS — negotiation page plate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="plate.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail" aria-label="Workspaces">
+    <div class="rail__brand">
+      <a class="rail__wordmark" href="#">CommerceOS</a>
+      <span class="rail__caption">Procurement desk</span>
+    </div>
+    <nav class="rail__nav" aria-label="Workspaces">
+      <span class="t-label">Workspaces</span>
+      <a class="rail__link" href="#" aria-current="page">Requisition</a>
+      <a class="rail__link" href="#">Review desk</a>
+    </nav>
+    <div class="rail__recent">
+      <span class="t-label">Recent</span>
+      <a class="recent" href="#" aria-current="page"><span class="recent__sku">PAP-A4-80</span><span class="recent__state">Awaiting vendor</span></a>
+      <a class="recent" href="#"><span class="recent__sku">GLV-NIT-M</span><span class="recent__state">Blocked</span></a>
+      <a class="recent" href="#"><span class="recent__sku">PAP-A4-80</span><span class="recent__state">Confirmed</span></a>
+    </div>
+    <div class="rail__foot">Demo — no payments processed</div>
+  </aside>
+
+  <div class="mobilebar">
+    <a class="rail__wordmark" href="#">CommerceOS</a>
+    <nav class="mobilebar__nav" aria-label="Workspaces">
+      <a href="#" aria-current="page">Requisition</a>
+      <a href="#">Review desk</a>
+    </nav>
+  </div>
+
+  <main class="main"><div class="page">
+
+    <!-- ---------------------------------------------------- awaiting -->
+    <div class="page-head">
+      <div class="page-head__top">
+        <span class="t-label">Buyer · PAP-A4-80</span>
+        <span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span>
+      </div>
+      <h1 class="t-h1 page-head__title">A4 Copy Paper, 80 gsm</h1>
+      <div class="page-head__meta"><span>Acme Facilities Group · 100 units · spec-2026.1</span></div>
+      <div class="page-head__meta"><span>target $27.00/unit · budget $4,000.00 ($40.00/unit) · due 31 Oct 2026 · filed 24 Oct, 19:21</span></div>
+    </div>
+
+    <section class="section" style="margin-top:32px">
+      <div class="orderline">
+        <div class="orderline__step is-active">
+          <span class="orderline__num">1</span>
+          <div>
+            <span class="t-label orderline__label">Agree</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em">No price agreed yet</div>
+            <div class="orderline__note">Waiting on the vendor desk.</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-muted">
+          <span class="orderline__num">2</span>
+          <div>
+            <span class="t-label orderline__label">Authorize</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em;color:var(--rule-strong)">—</div>
+            <div class="orderline__note">Opens once a price is agreed.</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-muted">
+          <span class="orderline__num">3</span>
+          <div>
+            <span class="t-label orderline__label">Confirm</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em;color:var(--rule-strong)">—</div>
+            <div class="orderline__note">Re-reads the live listing before it commits.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- board -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-head__title">
+          <h2 class="t-h3">Suppliers</h2>
+          <span class="section-head__count">3 suppliers · 4 offers · 2 rounds</span>
+        </div>
+      </div>
+      <div class="board">
+        <div class="board__col">
+          <div class="board__name">Meridian Office Goods</div>
+          <div class="board__price">$27.00 <small>/unit</small></div>
+          <div class="board__delta">at your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$30.50</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>5 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>85 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00</div>
+          <div class="board__state"><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span></div>
+        </div>
+        <div class="board__col">
+          <div class="board__name">Northwind Paper Co.</div>
+          <div class="board__price">$27.00 <small>/unit</small></div>
+          <div class="board__delta">at your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$32.00</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>3 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>92 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00</div>
+          <div class="board__state"><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span></div>
+        </div>
+        <div class="board__col">
+          <div class="board__name">Atlas Industrial Supply</div>
+          <div class="board__price">$30.50 <small>/unit</small></div>
+          <div class="board__delta board__delta--over">+$3.50 over your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$34.00</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>2 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>78 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00 <span class="t-id">→</span> R2 $30.50</div>
+          <div class="board__state"><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- transcript -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-head__title">
+          <h2 class="t-h3">Transcript</h2>
+          <span class="section-head__count">4 offers</span>
+        </div>
+      </div>
+      <table class="transcript">
+        <thead>
+          <tr>
+            <th style="width:56px"><span class="t-label">Time</span></th>
+            <th style="width:180px"><span class="t-label">Supplier</span></th>
+            <th style="width:64px"><span class="t-label">Round</span></th>
+            <th style="width:104px"><span class="t-label">Price</span></th>
+            <th><span class="t-label">Decision</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-id">19:21</td>
+            <td class="transcript__supplier">Northwind Paper Co.</td>
+            <td class="t-meta">R1</td>
+            <td>$27.00</td>
+            <td><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span>
+              <div class="transcript__note">Sent to the supplier — awaiting their decision.</div></td>
+          </tr>
+          <tr>
+            <td class="t-id">19:21</td>
+            <td class="transcript__supplier">Meridian Office Goods</td>
+            <td class="t-meta">R1</td>
+            <td>$27.00</td>
+            <td><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span>
+              <div class="transcript__note">Sent to the supplier — awaiting their decision.</div></td>
+          </tr>
+          <tr>
+            <td class="t-id">19:21</td>
+            <td class="transcript__supplier">Atlas Industrial Supply</td>
+            <td class="t-meta">R1</td>
+            <td>$27.00</td>
+            <td><span class="status status--blocked"><i class="status__mark"></i><span class="status__label">Declined</span></span>
+              <div class="transcript__note">The supplier declined this price.</div></td>
+          </tr>
+          <tr>
+            <td class="t-id">19:21</td>
+            <td class="transcript__supplier">Atlas Industrial Supply</td>
+            <td class="t-meta">R2</td>
+            <td>$30.50</td>
+            <td><span class="status status--waiting"><i class="status__mark"></i><span class="status__label">Awaiting vendor</span></span>
+              <div class="transcript__note">The agent countered at $30.50 — awaiting the supplier.</div></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ---------------------------------------------------- other states -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-head__title">
+          <h2 class="t-h3">Order line — other states</h2>
+          <span class="section-head__count">countered · agreed · authorized · blocked · confirmed</span>
+        </div>
+      </div>
+
+      <div class="orderline" style="margin-top:24px">
+        <div class="orderline__step is-active">
+          <span class="orderline__num">1</span>
+          <div>
+            <span class="t-label orderline__label">Agree</span>
+            <div class="orderline__value">$27.80 <small>/unit</small></div>
+            <div class="orderline__action"><button class="btn btn--primary">Accept $27.80</button></div>
+            <div class="orderline__note">Meridian Office Goods · 24 Oct, 19:21</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-muted">
+          <span class="orderline__num">2</span>
+          <div>
+            <span class="t-label orderline__label">Authorize</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em;color:var(--rule-strong)">—</div>
+            <div class="orderline__note">Opens once a price is agreed.</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-muted">
+          <span class="orderline__num">3</span>
+          <div>
+            <span class="t-label orderline__label">Confirm</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em;color:var(--rule-strong)">—</div>
+            <div class="orderline__note">Re-reads the live listing before it commits.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="orderline" style="margin-top:24px">
+        <div class="orderline__step is-done">
+          <span class="orderline__num">1</span>
+          <div>
+            <span class="t-label orderline__label">Agree</span>
+            <div class="orderline__value">$27.00 <small>/unit</small></div>
+            <div class="orderline__note">Meridian Office Goods · 24 Oct, 19:21</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-active">
+          <span class="orderline__num">2</span>
+          <div>
+            <span class="t-label orderline__label">Authorize</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em">$2,700.00 total</div>
+            <div class="orderline__action"><button class="btn btn--primary">Authorize purchase</button></div>
+            <div class="orderline__note">Records your approval. Confirmation is a separate step.</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-muted">
+          <span class="orderline__num">3</span>
+          <div>
+            <span class="t-label orderline__label">Confirm</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em;color:var(--rule-strong)">—</div>
+            <div class="orderline__note">Re-reads the live listing before it commits.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="orderline" style="margin-top:28px">
+        <div class="orderline__step is-done">
+          <span class="orderline__num">1</span>
+          <div>
+            <span class="t-label orderline__label">Agree</span>
+            <div class="orderline__value">$7.00 <small>/unit</small></div>
+            <div class="orderline__note">Atlas Industrial Supply · 100 units</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-done">
+          <span class="orderline__num">2</span>
+          <div>
+            <span class="t-label orderline__label">Authorize</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em">$700.00 total</div>
+            <div class="orderline__note">24 Oct, 19:59</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-failed">
+          <span class="orderline__num">3</span>
+          <div>
+            <span class="t-label orderline__label blocked">Confirm</span>
+            <div class="orderline__value blocked">Blocked</div>
+            <div class="orderline__note">The listing changed after you authorized.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="strip strip--blocked" style="margin-top:16px">
+        <div class="strip__head">
+          <span class="strip__title">Blocked at confirmation</span>
+          <span class="status status--blocked"><i class="status__mark"></i><span class="status__label">2 of 4 terms changed</span></span>
+        </div>
+        <p class="strip__body">Nothing was charged. The listing changed after you authorized, so the order stopped before it was placed.</p>
+        <div class="diff">
+          <div class="diff__row">
+            <span class="diff__term">List price</span>
+            <span class="diff__from">$7.80</span>
+            <span class="diff__arrow">→</span>
+            <span class="diff__to">$8.97</span>
+          </div>
+          <div class="diff__row">
+            <span class="diff__term">Terms</span>
+            <span class="diff__from t-id" style="font-size:12px">AT-terms-2026.04</span>
+            <span class="diff__arrow">→</span>
+            <span class="diff__to t-id" style="font-size:13px">AT-terms-2026.04-R1</span>
+          </div>
+        </div>
+        <details class="diff__unchanged">
+          <summary>Show the 2 unchanged terms</summary>
+          <div class="diff__row" style="border-top:0">
+            <span class="diff__term" style="color:var(--ink-3)">Delivery</span>
+            <span class="diff__from">4 days</span>
+            <span class="diff__arrow">·</span>
+            <span class="diff__to" style="font-size:13px;font-weight:400">unchanged</span>
+          </div>
+          <div class="diff__row">
+            <span class="diff__term" style="color:var(--ink-3)">Item spec</span>
+            <span class="diff__from t-id" style="font-size:12px">spec-2026.3</span>
+            <span class="diff__arrow">·</span>
+            <span class="diff__to" style="font-size:13px;font-weight:400">unchanged</span>
+          </div>
+        </details>
+        <div class="strip__actions">
+          <button class="btn btn--secondary">Raise a new requisition</button>
+        </div>
+      </div>
+
+      <div class="orderline" style="margin-top:28px">
+        <div class="orderline__step is-done">
+          <span class="orderline__num">1</span>
+          <div>
+            <span class="t-label orderline__label">Agree</span>
+            <div class="orderline__value">$27.00 <small>/unit</small></div>
+            <div class="orderline__note">Meridian Office Goods · 100 units</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-done">
+          <span class="orderline__num">2</span>
+          <div>
+            <span class="t-label orderline__label">Authorize</span>
+            <div class="orderline__value" style="font-size:15px;letter-spacing:-0.01em">$2,700.00 total</div>
+            <div class="orderline__note">24 Oct, 19:59</div>
+          </div>
+        </div>
+        <div class="orderline__sep"></div>
+        <div class="orderline__step is-done">
+          <span class="orderline__num">3</span>
+          <div>
+            <span class="t-label orderline__label agreed">Confirm</span>
+            <div class="orderline__value agreed">$2,700.00</div>
+            <div class="orderline__note">Order created 24 Oct, 19:59 · no payment processed in this demo.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------- board agreed -->
+    <section class="section">
+      <div class="section-head">
+        <div class="section-head__title">
+          <h2 class="t-h3">Suppliers — agreed state</h2>
+          <span class="section-head__count">recommended column</span>
+        </div>
+      </div>
+      <div class="board">
+        <div class="board__col board__col--recommended">
+          <div class="board__name">Meridian Office Goods</div>
+          <div class="board__price">$27.00 <small>/unit</small></div>
+          <div class="board__delta agreed">Recommended · at your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$30.50</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>5 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>85 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00</div>
+          <div class="board__state"><span class="status status--agreed"><i class="status__mark"></i><span class="status__label">Accepted</span></span></div>
+        </div>
+        <div class="board__col">
+          <div class="board__name">Northwind Paper Co.</div>
+          <div class="board__price">$27.00 <small>/unit</small></div>
+          <div class="board__delta">at your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$32.00</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>3 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>92 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00</div>
+          <div class="board__state"><span class="status status--neutral"><i class="status__mark"></i><span class="status__label">Superseded</span></span></div>
+        </div>
+        <div class="board__col">
+          <div class="board__name">Atlas Industrial Supply</div>
+          <div class="board__price">$30.50 <small>/unit</small></div>
+          <div class="board__delta board__delta--over">+$3.50 over your target</div>
+          <dl class="board__facts" style="margin:16px 0 0">
+            <div class="board__fact"><dt>List</dt><dd>$34.00</dd></div>
+            <div class="board__fact"><dt>Delivery</dt><dd>2 days</dd></div>
+            <div class="board__fact"><dt>Reliability</dt><dd>78 / 100</dd></div>
+          </dl>
+          <div class="board__trail">R1 $27.00 <span class="t-id">→</span> R2 $30.50</div>
+          <div class="board__state"><span class="status status--neutral"><i class="status__mark"></i><span class="status__label">Superseded</span></span></div>
+        </div>
+      </div>
+    </section>
+
+  </div></main>
+</div>
+</body>
+</html>

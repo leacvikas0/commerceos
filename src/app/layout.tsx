@@ -1,25 +1,20 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { IBM_Plex_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { SideNav } from "@/components/shell/side-nav";
-import {
-  SidebarRecent,
-  SidebarRecentFallback,
-} from "@/components/shell/sidebar-recent";
+import { TabStrip, TabStripFallback } from "@/components/shell/tab-strip";
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter",
+  variable: "--font-geist-sans",
 });
 
-const plexMono = IBM_Plex_Mono({
-  weight: ["400", "500", "600"],
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-plex-mono",
+  variable: "--font-geist-mono",
 });
 
 export const metadata: Metadata = {
@@ -37,37 +32,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        <a
-          href="#desk"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-ink focus:px-3 focus:py-2 focus:text-xs focus:text-paper"
-        >
+        <a href="#desk" className="skip-link">
           Skip to content
         </a>
 
-        <div className="app">
-          <aside className="sidebar">
-            <div className="sidebar__brand">
-              <Link href="/" className="sidebar__wordmark">
-                CommerceOS
-              </Link>
-              <span className="sidebar__caption">Procurement</span>
-            </div>
-
-            <div className="sidebar__body">
-              <SideNav />
-              <Suspense fallback={<SidebarRecentFallback />}>
-                <SidebarRecent />
-              </Suspense>
-            </div>
-
-            <div className="sidebar__foot">Demo — no payments processed</div>
-          </aside>
-
-          <div className="app__main">
-            <main id="desk">{children}</main>
+        <div className="shell">
+          <div className="tabstrip">
+            <Link href="/" className="tabstrip__brand">
+              CommerceOS
+            </Link>
+            <span className="tabstrip__divider" aria-hidden="true" />
+            <Suspense fallback={<TabStripFallback />}>
+              <TabStrip />
+            </Suspense>
           </div>
+
+          <main id="desk" className="main">
+            {children}
+          </main>
         </div>
       </body>
     </html>

@@ -1,17 +1,27 @@
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getNegotiationDetail } from "@/lib/queries";
 import { recommendDeal } from "@/lib/negotiation";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
-import { headlineStatus, isVendorCounter } from "@/components/status";
-import { Banner, StatusStamp } from "@/components/ui";
-import { PageHeader, AccountChip } from "@/components/shell/page-header";
-import { RoundsMatrix } from "@/components/negotiation/rounds-matrix";
-import { DealCard } from "@/components/negotiation/deal-card";
-import { OrderGate } from "@/components/negotiation/order-gate";
+import {
+  buyerOfferNote,
+  headlineStatus,
+  isVendorCounter,
+  offerDecision,
+} from "@/components/status";
+import { Banner, Sep, StatusWord } from "@/components/ui";
+import { PageHead } from "@/components/shell/page-head";
 import { CounterBanner } from "@/components/negotiation/counter-banner";
+import { TermsChanged } from "@/components/negotiation/terms-changed";
+import { Suppliers, type SupplierRow } from "@/components/negotiation/suppliers";
+import { Deal, type DealData } from "@/components/negotiation/deal";
+import { OrderGate } from "@/components/negotiation/order-gate";
+import { Rounds, type RoundRow } from "@/components/negotiation/rounds";
+import {
+  Transcript,
+  type TranscriptRow,
+} from "@/components/negotiation/transcript";
 
 // Cache Components: this route reads the database and request data on every
 // request, so it is allowed to block instead of prerendering a static shell.
@@ -35,16 +45,22 @@ export default async function NegotiationPage({
   const detail = await getNegotiationDetail(id);
   if (!detail) notFound();
 
-  const currency = detail.rounds[0]?.currency ?? "USD";
+  const currency =
+    detail.order?.currency ?? detail.rounds[0]?.currency ?? "USD";
   const status = headlineStatus(detail);
 
-  const accepted = detail.rounds.flatMap((round) =>
-    round.offers
-      .filter((offer) => offer.decision === "ACCEPTED")
-      .map((offer) => ({ offer, round })),
+  const offers = detail.rounds.flatMap((round) =>
+    round.offers.map((offer) => ({ offer, round })),
   );
+  const accepted = offers.filter(
+    ({ offer }) => offer.decision === "ACCEPTED",
+  );
+  const pending = offers.filter(({ offer }) => offer.decision === "PENDING");
+  // Recommend among accepted offers; before a deal exists, recommend the best
+  // offer still on the table so the supplier rail stays useful.
+  const recommendedPool = accepted.length > 0 ? accepted : pending;
   const best = recommendDeal(
-    accepted.map(({ offer, round }) => ({
+    recommendedPool.map(({ offer, round }) => ({
       offerId: offer.id,
       unitPriceMinor: offer.unitPriceMinor,
       deliveryDays: round.deliveryDays,
@@ -52,108 +68,162 @@ export default async function NegotiationPage({
     })),
   );
   const recommended = best
-    ? (accepted.find(({ offer }) => offer.id === best.offerId) ?? null)
+    ? (recommendedPool.find(({ offer }) => offer.id === best.offerId) ?? null)
     : null;
+  const acceptedRecommended = recommended?.offer.decision === "ACCEPTED" ? recommended : null;
+
+  const supplierRows: SupplierRow[] = detail.rounds.map((round) => {
+    const latest = round.offers[round.offers.length - 1];
+    return {
+      listingId: round.listingId,
+      supplierName: round.supplierName,
+      priceMinor: latest?.unitPriceMinor ?? round.listPriceMinor,
+      deliveryDays: round.deliveryDays,
+      reliabilityScore: round.reliabilityScore,
+      status: latest
+        ? offerDecision(latest.decision)
+        : { label: "No offer", tone: "neutral" },
+      recommended: recommended?.round.listingId === round.listingId,
+      currency,
+    };
+  });
+
+  let deal: DealData | null = null;
+  if (detail.order) {
+    const orderRound = detail.rounds.find(
+      (round) => round.listingId === detail.order!.listingId,
+    );
+    deal = {
+      totalMinor: detail.order.totalMinor,
+      unitMinor: detail.order.agreedUnitPriceMinor,
+      quantity: detail.order.quantity,
+      supplierName:
+        orderRound?.supplierName ??
+        recommended?.round.supplierName ??
+        "Supplier",
+      deliveryDays: orderRound?.deliveryDays ?? 0,
+      currency: detail.order.currency,
+      fromOrder: true,
+    };
+  } else if (acceptedRecommended) {
+    deal = {
+      totalMinor: acceptedRecommended.offer.unitPriceMinor * detail.quantity,
+      unitMinor: acceptedRecommended.offer.unitPriceMinor,
+      quantity: detail.quantity,
+      supplierName: acceptedRecommended.round.supplierName,
+      deliveryDays: acceptedRecommended.round.deliveryDays,
+      currency,
+      fromOrder: false,
+    };
+  }
+
+  const roundRows: RoundRow[] = offers
+    .map(({ offer, round }) => ({
+      id: offer.id,
+      round: offer.round,
+      supplierName: round.supplierName,
+      priceMinor: offer.unitPriceMinor,
+      decision: offerDecision(offer.decision),
+      note: buyerOfferNote(offer.decision, offer.note, offer.round),
+      currency,
+    }))
+    .sort(
+      (a, b) =>
+        a.round - b.round || a.supplierName.localeCompare(b.supplierName),
+    );
+
+  const transcriptRows: TranscriptRow[] = [...offers]
+    .sort(
+      (a, b) => a.offer.createdAt.getTime() - b.offer.createdAt.getTime(),
+    )
+    .map(({ offer, round }) => ({
+      id: offer.id,
+      time: offer.createdAt,
+      supplierName: round.supplierName,
+      round: offer.round,
+      priceMinor: offer.unitPriceMinor,
+      decision: offerDecision(offer.decision),
+      note: buyerOfferNote(offer.decision, offer.note, offer.round),
+      currency,
+    }));
 
   const pendingCounter =
-    detail.rounds
-      .flatMap((round) =>
-        round.offers.map((offer) => ({ offer, round })),
-      )
-      .find(
-        ({ offer }) =>
-          offer.decision === "PENDING" && isVendorCounter(offer.note),
-      ) ?? null;
-
-  const columns = Math.max(
-    3,
-    ...detail.rounds.flatMap((round) =>
-      round.offers.map((offer) => offer.round),
-    ),
-  );
+    offers.find(
+      ({ offer }) =>
+        offer.decision === "PENDING" && isVendorCounter(offer.note),
+    ) ?? null;
 
   return (
     <>
-      <PageHeader
-        title="Negotiation"
-        subtitle="Round-by-round record and the order gate."
-        right={
-          <AccountChip
-            name={detail.buyerName}
-            budgetMinor={detail.budgetCapMinor}
-            currency={currency}
-          />
+      <PageHead
+        eyebrow={`Buyer · ${detail.item.sku}`}
+        title={detail.item.name}
+        meta={
+          <>
+            <StatusWord status={status} />
+            <Sep />
+            <span>{detail.buyerName}</span>
+            <Sep />
+            <span>{detail.quantity} units</span>
+            <Sep />
+            <span>target {formatMoney(detail.targetUnitPriceMinor, currency)}</span>
+            <Sep />
+            <span>budget {formatMoney(detail.budgetCapMinor, currency)}</span>
+            <Sep />
+            <span>deadline {formatDate(detail.deadline)}</span>
+            <Sep />
+            <span>filed {formatDateTime(detail.createdAt)}</span>
+          </>
         }
       />
 
-      <div className="page">
-        <Banner error={error} notice={notice} />
+      <Banner error={error} notice={notice} />
 
-        <p className="text-[12px] text-ink-faint">
-          <Link href="/" className="hover:text-ink hover:underline">
-            Buyer workspace
-          </Link>
-          <span className="mx-1.5">/</span>
-          <span className="mono">{detail.item.sku}</span>
-        </p>
+      {pendingCounter ? (
+        <CounterBanner
+          negotiationId={detail.id}
+          offerId={pendingCounter.offer.id}
+          unitPriceMinor={pendingCounter.offer.unitPriceMinor}
+          quantity={detail.quantity}
+          currency={currency}
+        />
+      ) : null}
 
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 className="text-[23px] font-semibold leading-tight">
-            {detail.item.name}
-          </h2>
-          <StatusStamp status={status} />
-        </div>
-        <p className="mt-1 text-[12px] text-ink-faint">
-          Qty {detail.quantity} · Target{" "}
-          <span className="mono">
-            {formatMoney(detail.targetUnitPriceMinor, currency)}
-          </span>{" "}
-          · Budget{" "}
-          <span className="mono">
-            {formatMoney(detail.budgetCapMinor, currency)}
-          </span>{" "}
-          · Deadline {formatDate(detail.deadline)} · Filed{" "}
-          {formatDateTime(detail.createdAt)}
-        </p>
-
-        {pendingCounter ? (
-          <CounterBanner
-            negotiationId={detail.id}
-            offerId={pendingCounter.offer.id}
-            unitPriceMinor={pendingCounter.offer.unitPriceMinor}
-            quantity={detail.quantity}
-            currency={currency}
-          />
+      <div className="grid12">
+        {detail.order?.status === "BLOCKED" ? (
+          <div className="span-12">
+            <TermsChanged order={detail.order} currency={currency} />
+          </div>
         ) : null}
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-3">
-          <div className="min-w-0 lg:col-span-2">
-            <section className="card">
-              <div className="card__head">
-                <h2 className="card__title">Rounds</h2>
-                <span className="card__sub">
-                  {detail.rounds.length} suppliers
-                </span>
-              </div>
-              <div className="card__body card__body--flush overflow-x-auto">
-                <RoundsMatrix
-                  rounds={detail.rounds}
-                  currency={currency}
-                  recommendedOfferId={recommended?.offer.id ?? null}
-                  columns={columns}
-                />
-              </div>
-            </section>
-          </div>
+        <div className="span-8">
+          <Suppliers rows={supplierRows} />
+        </div>
 
-          <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[76px] lg:self-start">
-            <DealCard
-              detail={detail}
-              currency={currency}
-              recommended={recommended}
-            />
-            <OrderGate detail={detail} currency={currency} />
-          </div>
+        <div className="span-4">
+          <Deal
+            deal={deal}
+            fallback={{
+              targetUnitPriceMinor: detail.targetUnitPriceMinor,
+              budgetCapMinor: detail.budgetCapMinor,
+              deadline: detail.deadline,
+              supplierState:
+                detail.status === "REJECTED" ? "No deal" : "Awaiting",
+              currency,
+            }}
+          />
+        </div>
+
+        <div className="span-8">
+          <Rounds rows={roundRows} />
+        </div>
+
+        <div className="span-4">
+          <OrderGate detail={detail} />
+        </div>
+
+        <div className="span-12">
+          <Transcript rows={transcriptRows} />
         </div>
       </div>
     </>

@@ -1,6 +1,6 @@
 import type { NegotiationDetail } from "./types";
 
-export type Tone = "olive" | "oxblood" | "ochre" | "ink" | "faint";
+export type Tone = "waiting" | "blocked" | "confirmed" | "neutral";
 
 export type StatusDescriptor = {
   label: string;
@@ -17,35 +17,33 @@ export type StatusOrder = { status: string; authorizedAt: Date | null } | null;
 export function negotiationStatus(status: string): StatusDescriptor {
   switch (status) {
     case "OPEN":
-      return { label: "Open", tone: "ink" };
+      return { label: "Open", tone: "neutral" };
     case "AWAITING_VENDOR":
-      return { label: "Awaiting vendor", tone: "ochre" };
+      return { label: "Awaiting vendor", tone: "waiting" };
     case "AGREED":
-      return { label: "Agreed — awaiting authorization", tone: "ochre" };
+      return { label: "Agreed — awaiting authorization", tone: "waiting" };
     case "REJECTED":
-      return { label: "No deal", tone: "oxblood" };
+      return { label: "No deal", tone: "blocked" };
     default:
-      return { label: status, tone: "faint" };
+      return { label: status, tone: "neutral" };
   }
 }
 
-export function orderStatus(
-  order: StatusOrder,
-): StatusDescriptor | null {
+export function orderStatus(order: StatusOrder): StatusDescriptor | null {
   if (!order) return null;
   switch (order.status) {
     case "AWAITING_AUTHORIZATION":
       return order.authorizedAt
-        ? { label: "Authorized — awaiting confirmation", tone: "ochre" }
-        : { label: "Agreed — awaiting authorization", tone: "ochre" };
+        ? { label: "Authorized — awaiting confirmation", tone: "waiting" }
+        : { label: "Agreed — awaiting authorization", tone: "waiting" };
     case "CONFIRMED":
-      return { label: "Confirmed", tone: "olive" };
+      return { label: "Confirmed", tone: "confirmed" };
     case "BLOCKED":
-      return { label: "Blocked — terms changed", tone: "oxblood" };
+      return { label: "Blocked — terms changed", tone: "blocked" };
     case "CANCELLED":
-      return { label: "Cancelled", tone: "faint" };
+      return { label: "Cancelled", tone: "neutral" };
     default:
-      return { label: order.status, tone: "faint" };
+      return { label: order.status, tone: "neutral" };
   }
 }
 
@@ -61,15 +59,15 @@ export function headlineStatus(
 export function offerDecision(decision: string): StatusDescriptor {
   switch (decision) {
     case "ACCEPTED":
-      return { label: "Accepted", tone: "olive" };
+      return { label: "Accepted", tone: "confirmed" };
     case "REJECTED":
-      return { label: "Declined", tone: "oxblood" };
+      return { label: "Declined", tone: "blocked" };
     case "PENDING":
-      return { label: "Pending", tone: "ochre" };
+      return { label: "Pending", tone: "waiting" };
     case "COUNTERED":
-      return { label: "Countered", tone: "ink" };
+      return { label: "Countered", tone: "neutral" };
     default:
-      return { label: decision, tone: "faint" };
+      return { label: decision, tone: "neutral" };
   }
 }
 

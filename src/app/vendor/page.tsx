@@ -2,13 +2,13 @@ import { connection } from "next/server";
 import type { Metadata } from "next";
 import { getVendorDashboard } from "@/lib/queries";
 import { isVendorCounter } from "@/components/status";
-import { Banner, EmptyNote, StatusStamp } from "@/components/ui";
-import { PageHeader } from "@/components/shell/page-header";
-import { BandLegend } from "@/components/vendor/band-legend";
-import { PendingList } from "@/components/vendor/pending-list";
-import { OfferDetail } from "@/components/vendor/offer-detail";
-import { DecidedFeed } from "@/components/vendor/decided-feed";
-import { ListingsPanel } from "@/components/vendor/listings-panel";
+import { Banner, EmptyNote, StatusWord } from "@/components/ui";
+import { PageHead } from "@/components/shell/page-head";
+import { Queue } from "@/components/vendor/queue";
+import { OfferReview } from "@/components/vendor/offer-review";
+import { Decision } from "@/components/vendor/decision";
+import { VendorSettled } from "@/components/vendor/settled";
+import { Listings } from "@/components/vendor/listings";
 
 // Cache Components: this route reads the database and request data on every
 // request, so it is allowed to block instead of prerendering a static shell.
@@ -30,112 +30,82 @@ export default async function VendorDeskPage({
 
   // A vendor counter creates a pending offer addressed to the buyer; it must
   // not appear back in the vendor's own queue.
-  const queue = pending.filter((pendingOffer) =>
-    !isVendorCounter(pendingOffer.note),
+  const queue = pending.filter(
+    (pendingOffer) => !isVendorCounter(pendingOffer.note),
   );
   const selectedId = queue.some((item) => item.id === offer)
     ? offer!
     : (queue[0]?.id ?? null);
   const selected = queue.find((item) => item.id === selectedId) ?? null;
 
-  const autoAccepted = decided.filter((item) =>
-    item.note?.startsWith("Auto-accepted"),
-  ).length;
-  const autoRejected = decided.filter((item) =>
-    item.note?.startsWith("Auto-rejected"),
-  ).length;
-  const counters = decided.filter(
-    (item) => item.decision === "COUNTERED",
-  ).length;
-
-  const kpis = [
-    { label: "Awaiting decision", value: queue.length, dot: "kpi__dot--amber" },
-    { label: "Auto-accepted", value: autoAccepted, dot: "kpi__dot--green" },
-    { label: "Auto-rejected", value: autoRejected, dot: "kpi__dot--red" },
-    { label: "Counters sent", value: counters, dot: "" },
-  ];
-
   return (
     <>
-      <PageHeader
+      <PageHead
+        eyebrow="Vendor"
         title="Review desk"
-        subtitle="Offers inside the review band wait for a human decision."
-        right={
-          <StatusStamp
-            status={{ label: `${queue.length} pending`, tone: "ochre" }}
+        meta={
+          <span>
+            Offers inside the supplier&apos;s review band wait here. Policy
+            settles everything outside it.
+          </span>
+        }
+        aside={
+          <StatusWord
+            status={
+              queue.length > 0
+                ? { label: `${queue.length} need a decision`, tone: "waiting" }
+                : { label: "Nothing needs a decision", tone: "neutral" }
+            }
           />
         }
       />
 
-      <div className="page">
-        <Banner error={error} notice={notice} />
+      <Banner error={error} notice={notice} />
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {kpis.map((kpi) => (
-            <div key={kpi.label} className="kpi">
-              <p className="kpi__label">
-                <span className={`kpi__dot ${kpi.dot}`} />
-                {kpi.label}
-              </p>
-              <p className="kpi__value">{kpi.value}</p>
-            </div>
-          ))}
+      <div className="grid12">
+        <div className="span-4">
+          <Queue offers={queue} selectedId={selectedId} />
         </div>
 
-        <BandLegend />
-
-        <div className="queue">
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title">Awaiting decision</h2>
-              <span className="card__sub">
-                {queue.length === 0 ? "Clear" : `${queue.length} open`}
-              </span>
+        {selected ? (
+          <>
+            <div className="span-5">
+              <OfferReview offer={selected} />
             </div>
-            {queue.length === 0 ? (
-              <EmptyNote>Nothing in the review band right now.</EmptyNote>
-            ) : (
-              <PendingList
-                offers={queue}
-                selectedId={selectedId}
-                now={Date.now()}
-              />
-            )}
-          </section>
+            <div className="span-3">
+              <Decision offer={selected} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="span-5">
+              <section className="module">
+                <div className="module__head">
+                  <h2 className="module__label">Offer review</h2>
+                </div>
+                <EmptyNote>
+                  Select an offer from the queue to see it against the
+                  supplier&apos;s window.
+                </EmptyNote>
+              </section>
+            </div>
+            <div className="span-3">
+              <section className="module">
+                <div className="module__head">
+                  <h2 className="module__label">Decision</h2>
+                </div>
+                <EmptyNote>No offer selected.</EmptyNote>
+              </section>
+            </div>
+          </>
+        )}
 
-          {selected ? (
-            <OfferDetail offer={selected} />
-          ) : (
-            <section className="card">
-              <EmptyNote>
-                Select an offer from the queue to accept, reject or counter it.
-              </EmptyNote>
-            </section>
-          )}
+        <div className="span-12">
+          <VendorSettled offers={decided} />
         </div>
 
-        <div className="mt-4 space-y-4">
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title">Settled</h2>
-              <span className="card__sub">
-                Last {decided.length} decisions
-              </span>
-            </div>
-            <div className="card__body card__body--flush overflow-x-auto">
-              <DecidedFeed offers={decided} />
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card__head">
-              <h2 className="card__title">Listings &amp; terms gate</h2>
-              <span className="card__sub">{listings.length} listings</span>
-            </div>
-            <div className="card__body card__body--flush overflow-x-auto">
-              <ListingsPanel listings={listings} />
-            </div>
-          </section>
+        <div className="span-12">
+          <Listings listings={listings} />
         </div>
       </div>
     </>

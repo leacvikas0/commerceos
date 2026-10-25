@@ -163,6 +163,16 @@ export async function getRecentNegotiations(limit = 6) {
   });
 }
 
+/** Small count for the pinned Review desk tab; no floors or offer rows. */
+export async function getPendingOfferCount() {
+  return prisma.offer.count({
+    where: {
+      decision: "PENDING",
+      negotiation: { status: { in: ["AWAITING_VENDOR", "OPEN"] } },
+    },
+  });
+}
+
 export async function getVendorDashboard() {
   const [pending, decided, listings] = await Promise.all([
     prisma.offer.findMany({
